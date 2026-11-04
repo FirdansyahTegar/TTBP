@@ -50,11 +50,23 @@ $total_rows = max($min_rows, count($items));
 .ttbp-table td, 
 .ttbp-table th {
     border: 1px solid #000000 !important;
-    padding: 3px 6px !important;
-    font-size: 13px !important;
+    padding: 3px 6px;
+    font-size: 13px;
     color: #000000 !important;
     background-color: #ffffff;
     box-sizing: border-box !important;
+}
+
+/* Bagian Periode TTBP agar ringkas, pas dan tidak keluar kotak */
+.ttbp-periode-val {
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+    font-size: 10px !important;
+    font-weight: bold !important;
+    letter-spacing: -0.2px !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+    padding: 2px 4px !important;
+    overflow: hidden !important;
 }
 
 /* Bagian dalam item table TANPA GARIS */
@@ -201,10 +213,10 @@ $total_rows = max($min_rows, count($items));
         <!-- REALISASI ATAS PROGRAM & PERIODE -->
         <table class="ttbp-table ttbp-program-table" style="width:100%; border-collapse:collapse; margin-top:-1px; border:1px solid #000; table-layout:fixed; background:#fff;">
             <colgroup>
-                <col style="width: 22%;">
-                <col style="width: 48%;">
-                <col style="width: 10%;">
                 <col style="width: 20%;">
+                <col style="width: 46%;">
+                <col style="width: 9%;">
+                <col style="width: 25%;">
             </colgroup>
             <tr>
                 <td class="ttbp-th-gray" style="border:1px solid #000; background-color:#d9d9d9; padding-left:8px; height:26px; vertical-align:middle; text-align:left; font-weight:bold; font-size:13px; color:#000;">
@@ -216,7 +228,7 @@ $total_rows = max($min_rows, count($items));
                 <td class="ttbp-th-gray text-center" style="border:1px solid #000; background-color:#d9d9d9; height:26px; vertical-align:middle; text-align:center; font-weight:bold; font-size:12px; color:#000;">
                     Periode
                 </td>
-                <td class="text-center font-monospace" style="border:1px solid #000; height:26px; vertical-align:middle; text-align:center; font-size:11px; font-weight:600; color:#000; letter-spacing:-0.2px; white-space:nowrap; padding:2px 4px;">
+                <td class="text-center ttbp-periode-val" style="border:1px solid #000; height:26px; vertical-align:middle;">
                     <?= htmlspecialchars($ttbp['periode']); ?>
                 </td>
             </tr>
