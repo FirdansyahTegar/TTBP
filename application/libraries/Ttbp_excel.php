@@ -364,11 +364,14 @@ class Ttbp_excel {
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER]
         ]);
 
-        // Border footer boxes
+        // Border footer boxes (tanpa garis di atas nama penandatangan)
         $sheet->getStyle("A{$footer_start}:C{$footer_end}")->applyFromArray($border_all_thin);
-        $sheet->getStyle("D{$footer_start}:E{$footer_end}")->applyFromArray($border_all_thin);
-        $sheet->getStyle("F{$footer_start}:G{$footer_end}")->applyFromArray($border_all_thin);
-        $sheet->getStyle("H{$footer_start}:H{$footer_end}")->applyFromArray($border_all_thin);
+        $sheet->getStyle("D{$footer_start}:E{$footer_start}")->applyFromArray($border_outline_thin);
+        $sheet->getStyle("D" . ($footer_start + 1) . ":E{$footer_end}")->applyFromArray($border_outline_thin);
+        $sheet->getStyle("F{$footer_start}:G{$footer_start}")->applyFromArray($border_outline_thin);
+        $sheet->getStyle("F" . ($footer_start + 1) . ":G{$footer_end}")->applyFromArray($border_outline_thin);
+        $sheet->getStyle("H{$footer_start}:H{$footer_start}")->applyFromArray($border_outline_thin);
+        $sheet->getStyle("H" . ($footer_start + 1) . ":H{$footer_end}")->applyFromArray($border_outline_thin);
 
         // Atur tinggi baris footer
         $sheet->getRowDimension($footer_start)->setRowHeight(22);

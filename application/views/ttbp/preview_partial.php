@@ -316,7 +316,7 @@ $total_rows = max($min_rows, count($items));
             </tbody>
         </table>
 
-        <!-- FOOTER SECTION (PERHATIAN & SIGNATURES) -->
+        <!-- FOOTER SECTION (PERHATIAN & SIGNATURES TANPA GARIS DI ATAS NAMA) -->
         <table class="ttbp-table ttbp-footer-table" style="width:100%; border-collapse:collapse; margin-top:-1px; border:1px solid #000; table-layout:fixed; background:#fff;">
             <colgroup>
                 <col style="width: 35%;">
@@ -326,7 +326,7 @@ $total_rows = max($min_rows, count($items));
             </colgroup>
             <tr>
                 <!-- Box Perhatian -->
-                <td rowspan="3" style="border:1px solid #000; vertical-align:top; padding:6px 8px; font-size:11px; line-height:1.35; color:#000;">
+                <td rowspan="2" style="border:1px solid #000; vertical-align:top; padding:6px 8px; font-size:11px; line-height:1.35; color:#000;">
                     <strong style="display:block; margin-bottom:2px;">Perhatian :</strong>
                     Bila Terjadi Retur/Faktur Batal, Sehingga<br>
                     Target Tidak Tercapai, Maka Barang Promosi<br>
@@ -347,21 +347,21 @@ $total_rows = max($min_rows, count($items));
                 </td>
             </tr>
             <tr>
-                <!-- Area Tanda Tangan Kosong -->
-                <td style="border:1px solid #000; height:60px;"></td>
-                <td style="border:1px solid #000; height:60px;"></td>
-                <td style="border:1px solid #000; height:60px;"></td>
-            </tr>
-            <tr>
-                <!-- Nama Penandatangan -->
-                <td style="border:1px solid #000; text-align:center; height:26px; vertical-align:middle; font-size:13px; color:#000;">
-                    <?= !empty($ttbp['disetujui_oleh']) ? htmlspecialchars($ttbp['disetujui_oleh']) : '&nbsp;'; ?>
+                <!-- Area Tanda Tangan & Nama (Tanpa garis pemisah di atas nama penandatangan) -->
+                <td style="border:1px solid #000; height:86px; vertical-align:bottom; text-align:center; padding:0 4px 6px 4px; font-size:13px; color:#000;">
+                    <div style="font-size:13px; color:#000; line-height:1.2;">
+                        <?= !empty($ttbp['disetujui_oleh']) ? htmlspecialchars($ttbp['disetujui_oleh']) : '&nbsp;'; ?>
+                    </div>
                 </td>
-                <td style="border:1px solid #000; text-align:center; height:26px; vertical-align:middle; font-weight:500; font-size:13px; color:#000;">
-                    <?= !empty($ttbp['dibuat_oleh']) ? htmlspecialchars($ttbp['dibuat_oleh']) : 'Nonik Dia'; ?>
+                <td style="border:1px solid #000; height:86px; vertical-align:bottom; text-align:center; padding:0 4px 6px 4px; font-weight:500; font-size:13px; color:#000;">
+                    <div style="font-size:13px; font-weight:500; color:#000; line-height:1.2;">
+                        <?= !empty($ttbp['dibuat_oleh']) ? htmlspecialchars($ttbp['dibuat_oleh']) : 'Nonik Dia'; ?>
+                    </div>
                 </td>
-                <td style="border:1px solid #000; text-align:center; height:26px; vertical-align:middle; font-weight:500; font-size:13px; color:#000;">
-                    <?= !empty($ttbp['penerima']) ? htmlspecialchars($ttbp['penerima']) : '&nbsp;'; ?>
+                <td style="border:1px solid #000; height:86px; vertical-align:bottom; text-align:center; padding:0 4px 6px 4px; font-weight:500; font-size:13px; color:#000;">
+                    <div style="font-size:13px; font-weight:500; color:#000; line-height:1.2;">
+                        <?= !empty($ttbp['penerima']) ? htmlspecialchars($ttbp['penerima']) : '&nbsp;'; ?>
+                    </div>
                 </td>
             </tr>
         </table>
