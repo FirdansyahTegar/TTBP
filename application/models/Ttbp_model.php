@@ -517,10 +517,67 @@ class Ttbp_model extends CI_Model {
     }
 
     /**
-     * Ambil semua baris dengan nomor TTBP yang sama
+     * Format Nomor TTBP Standar Resmi: C + 2 digit tahun + 4 digit nomor urut (contoh: C260025, C260823)
+     */
+    public static function format_nomor_ttbp($nomor, $tanggal = null) {
+        if ($nomor === null || $nomor === '') {
+            return '';
+        }
+
+        $nomor_str = trim((string)$nomor);
+        if ($nomor_str === '' || $nomor_str === '-') {
+            return '';
+        }
+
+        // Jika sudah dalam format C + 2 digit tahun + 4 digit nomor (misal C260025)
+        if (preg_match('/^C\d{6}$/i', $nomor_str)) {
+            return strtoupper($nomor_str);
+        }
+
+        // Tentukan 2 digit tahun dari tanggal TTBP (default '26' untuk periode 2026)
+        $tahun = '26';
+        if (!empty($tanggal)) {
+            $time = strtotime($tanggal);
+            if ($time !== false && $time > 0) {
+                $tahun = date('y', $time);
+            }
+        }
+
+        // Ambil hanya karakter angka dari nomor
+        $digits = preg_replace('/[^0-9]/', '', $nomor_str);
+        if ($digits === '') {
+            return $nomor_str;
+        }
+        $num = intval($digits);
+
+        return 'C' . $tahun . str_pad($num, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Ambil semua baris dengan nomor TTBP yang sama (mendukung pencarian by nomor biasa maupun format C26xxxx)
      */
     public function get_laporan_by_nomor_ttbp($nomor_ttbp) {
-        $rows = $this->db->where('nomor_ttbp', $nomor_ttbp)->order_by('id', 'ASC')->get('laporan_bonus_promosi')->result_array();
+        $nomor_clean = trim((string)$nomor_ttbp);
+        $candidates = [$nomor_clean];
+
+        // Jika input berupa format C + 2 digit tahun + 4 digit (misal C260025 atau C260823)
+        if (preg_match('/^C\d{2}(\d{4})$/i', $nomor_clean, $m)) {
+            $digits_pad = $m[1];                // '0025'
+            $digits_raw = (string)intval($m[1]); // '25'
+            $candidates[] = $digits_pad;
+            $candidates[] = $digits_raw;
+        } else if (is_numeric($nomor_clean)) {
+            // Jika input angka biasa (misal 25), cari juga format pad '0025' dan 'C260025'
+            $pad = str_pad($nomor_clean, 4, '0', STR_PAD_LEFT);
+            $candidates[] = $pad;
+            $candidates[] = 'C26' . $pad;
+        }
+
+        $rows = $this->db->where_in('nomor_ttbp', array_unique($candidates))
+                         ->order_by('id', 'ASC')
+                         ->get('laporan_bonus_promosi')
+                         ->result_array();
+
         if (!empty($rows)) {
             $first = $rows[0];
             $master_toko = null;
@@ -803,9 +860,12 @@ class Ttbp_model extends CI_Model {
             }
         }
 
+        $formatted_ttbp = self::format_nomor_ttbp($first['nomor_ttbp'], $first['tanggal_ttbp']);
+
         return [
             'id'                => $first['id'],
-            'nomor_ttbp'        => $first['nomor_ttbp'],
+            'nomor_ttbp'        => $formatted_ttbp,
+            'nomor_ttbp_raw'    => $first['nomor_ttbp'],
             'tanggal'           => $first['tanggal_ttbp'] ?: date('Y-m-d'),
             'kode_kios'         => $first['kode_kios'],
             'nama_kios'         => $nama_kios,
@@ -949,6 +1009,7 @@ class Ttbp_model extends CI_Model {
         $header_found = false;
         $batch = [];
         $now = date('Y-m-d H:i:s');
+        $no_seq = 1;
 
         foreach ($rows as $row) {
             $col0 = trim((string)($row[0] ?? ''));
@@ -996,10 +1057,14 @@ class Ttbp_model extends CI_Model {
             $at           = trim((string)($row[20] ?? ''));
             $ket          = trim((string)($row[22] ?? ''));
 
+            // Pastikan Nomor Urut adalah bilangan bulat positif urut (1, 2, 3...)
+            $clean_no = $no_seq++;
+            $ttbp_raw = trim((string)($row[2] ?? '')) ?: (string)$clean_no;
+
             $batch[] = [
-                'no_urut_lap'          => $col0,
+                'no_urut_lap'          => (string)$clean_no,
                 'tanggal_ttbp'         => $tgl_ttbp,
-                'nomor_ttbp'           => trim((string)($row[2] ?? '')) ?: $col0,
+                'nomor_ttbp'           => $ttbp_raw,
                 'tgl_sdh_dipotong'     => $tgl_potong,
                 'faktur_promo'         => ($faktur_promo !== '-' && $faktur_promo !== '') ? $faktur_promo : null,
                 'kode_kios'            => ($kode_kios !== '-' && $kode_kios !== '') ? $kode_kios : null,

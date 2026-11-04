@@ -384,9 +384,9 @@ class Ttbp extends CI_Controller {
                 }
             }
 
-            $sheet->setCellValue('A' . $row_idx, $r['no_urut_lap']);
+            $sheet->setCellValue('A' . $row_idx, intval($r['no_urut_lap']) > 0 ? intval($r['no_urut_lap']) : ($row_idx - 3));
             $sheet->setCellValue('B' . $row_idx, $r['tanggal_ttbp'] ? date('d-M-y', strtotime($r['tanggal_ttbp'])) : '');
-            $sheet->setCellValue('C' . $row_idx, $r['nomor_ttbp']);
+            $sheet->setCellValue('C' . $row_idx, Ttbp_model::format_nomor_ttbp($r['nomor_ttbp'], $r['tanggal_ttbp']));
             $sheet->setCellValue('D' . $row_idx, $r['tgl_sdh_dipotong'] ? date('d-M-y', strtotime($r['tgl_sdh_dipotong'])) : '');
             $sheet->setCellValue('E' . $row_idx, $r['faktur_promo']);
             $sheet->setCellValue('F' . $row_idx, $r['kode_kios']);

@@ -320,21 +320,22 @@
                                 <!-- Tombol Aksi TTBP (Sticky Left) -->
                                 <td class="text-center sticky-col-action">
                                     <div class="d-inline-flex align-items-center gap-1">
+                                        <?php $formatted_ttbp_no = Ttbp_model::format_nomor_ttbp($r['nomor_ttbp'], $r['tanggal_ttbp']); ?>
                                         <!-- Pratinjau Lembar TTBP Fisik -->
                                         <button type="button" class="btn btn-xs btn-outline-primary btn-preview-ttbp" 
-                                                data-nomor="<?= htmlspecialchars($r['nomor_ttbp']); ?>" 
+                                                data-nomor="<?= htmlspecialchars($formatted_ttbp_no ?: $r['nomor_ttbp']); ?>" 
                                                 title="Pratinjau Lembar TTBP">
                                             <i class="bi bi-eye"></i>
                                         </button>
 
                                         <!-- Cetak Lembar TTBP Fisik -->
-                                        <a href="<?= site_url('ttbp/cetak/' . urlencode($r['nomor_ttbp']) . '?autoprint=1'); ?>" target="_blank" 
+                                        <a href="<?= site_url('ttbp/cetak/' . urlencode($formatted_ttbp_no ?: $r['nomor_ttbp']) . '?autoprint=1'); ?>" target="_blank" 
                                            class="btn btn-xs btn-outline-dark" title="Cetak Lembar TTBP">
                                             <i class="bi bi-printer"></i>
                                         </a>
 
                                         <!-- Export Excel TTBP Fisik -->
-                                        <a href="<?= site_url('ttbp/export_excel/' . urlencode($r['nomor_ttbp'])); ?>" 
+                                        <a href="<?= site_url('ttbp/export_excel/' . urlencode($formatted_ttbp_no ?: $r['nomor_ttbp'])); ?>" 
                                            class="btn btn-xs btn-outline-success" title="Unduh Lembar Excel TTBP">
                                             <i class="bi bi-file-earmark-excel"></i>
                                         </a>
@@ -342,7 +343,7 @@
                                         <!-- Tombol Buka Popup Opsi (Overlay di atas Tabel) -->
                                         <button type="button" class="btn btn-xs btn-light border btn-open-opsi" 
                                                 data-id="<?= $r['id']; ?>"
-                                                data-nomor="<?= htmlspecialchars($r['nomor_ttbp']); ?>"
+                                                data-nomor="<?= htmlspecialchars($formatted_ttbp_no ?: $r['nomor_ttbp']); ?>"
                                                 data-pembeli="<?= htmlspecialchars($r['nama_pembeli']); ?>"
                                                 data-tgl-kembali="<?= htmlspecialchars($r['tgl_kembali_ttbp'] ?: ''); ?>"
                                                 data-edit-url="<?= site_url('ttbp/edit/' . $r['id']); ?>"
@@ -353,9 +354,9 @@
                                     </div>
                                 </td>
 
-                                <!-- No. -->
-                                <td class="text-center text-muted fw-semibold">
-                                    <?= htmlspecialchars($r['no_urut_lap'] ?: ($offset + $idx + 1)); ?>
+                                <!-- No. (Bilangan Bulat Positif Urut) -->
+                                <td class="text-center text-muted fw-semibold font-monospace">
+                                    <?= intval($r['no_urut_lap']) > 0 ? intval($r['no_urut_lap']) : ($offset + $idx + 1); ?>
                                 </td>
 
                                 <!-- Tanggal TTBP -->
@@ -363,10 +364,10 @@
                                     <?= $r['tanggal_ttbp'] ? date('d-M-y', strtotime($r['tanggal_ttbp'])) : '-'; ?>
                                 </td>
 
-                                <!-- TTBP -->
+                                <!-- TTBP (Format Resmi C + Tahun + 4 Digit) -->
                                 <td class="text-center text-nowrap">
                                     <span class="text-primary fw-bold font-monospace">
-                                        #<?= htmlspecialchars($r['nomor_ttbp']); ?>
+                                        <?= htmlspecialchars(Ttbp_model::format_nomor_ttbp($r['nomor_ttbp'], $r['tanggal_ttbp'])); ?>
                                     </span>
                                 </td>
 
