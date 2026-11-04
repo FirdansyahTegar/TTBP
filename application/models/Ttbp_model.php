@@ -758,13 +758,30 @@ class Ttbp_model extends CI_Model {
             $prog_str .= ' ' . floatval($first['volume_prog']) . ' ' . ($first['satuan_vol'] ?: '');
         }
 
-        // Tentukan Periode
-        if (!empty($first['periode_prog_raw'])) {
+        // Tentukan Periode dengan format standar: YYYY/MM/DD - YYYY/MM/DD
+        $tgl_awal = !empty($first['periode_prog_awal']) ? $first['periode_prog_awal'] : null;
+        $tgl_akhir = !empty($first['periode_prog_akhir']) ? $first['periode_prog_akhir'] : null;
+
+        if ((!$tgl_awal || !$tgl_akhir) && !empty($first['periode_prog_raw'])) {
+            $parts = explode(' - ', $first['periode_prog_raw']);
+            if (count($parts) >= 2) {
+                $tgl_awal = $tgl_awal ?: trim($parts[0]);
+                $tgl_akhir = $tgl_akhir ?: trim($parts[1]);
+            }
+        }
+
+        if ($tgl_awal && $tgl_akhir) {
+            $time_awal = strtotime(str_replace('/', '-', $tgl_awal));
+            $time_akhir = strtotime(str_replace('/', '-', $tgl_akhir));
+            if ($time_awal && $time_akhir) {
+                $periode = date('Y/m/d', $time_awal) . ' - ' . date('Y/m/d', $time_akhir);
+            } else {
+                $periode = $first['periode_prog_raw'];
+            }
+        } else if (!empty($first['periode_prog_raw'])) {
             $periode = $first['periode_prog_raw'];
-        } else if (!empty($first['periode_prog_awal']) && !empty($first['periode_prog_akhir'])) {
-            $periode = date('d/m/y', strtotime($first['periode_prog_awal'])) . ' - ' . date('d/m/y', strtotime($first['periode_prog_akhir']));
         } else {
-            $periode = 'Januari - Desember 2026';
+            $periode = '2026/01/01 - 2026/12/31';
         }
 
         // Tentukan apakah lembar TTBP ini untuk bonus 'Uang'
@@ -1081,7 +1098,7 @@ class Ttbp_model extends CI_Model {
                 'satuan_vol'           => ($satuan_vol !== '-' && $satuan_vol !== '0' && $satuan_vol !== '') ? $satuan_vol : null,
                 'periode_prog_awal'    => $tgl_awal,
                 'periode_prog_akhir'   => $tgl_akhir,
-                'periode_prog_raw'     => ($tgl_awal && $tgl_akhir) ? ($tgl_awal . ' - ' . $tgl_akhir) : '',
+                'periode_prog_raw'     => ($tgl_awal && $tgl_akhir) ? (date('Y/m/d', strtotime($tgl_awal)) . ' - ' . date('Y/m/d', strtotime($tgl_akhir))) : '',
                 'faktur'               => ($faktur !== '-' && $faktur !== '') ? $faktur : null,
                 'kode_wilayah'         => ($at !== '-' && $at !== '') ? $at : null,
                 'tgl_kembali_ttbp'     => $tgl_kembali,

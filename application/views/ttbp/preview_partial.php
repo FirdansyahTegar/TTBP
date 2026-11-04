@@ -202,9 +202,9 @@ $total_rows = max($min_rows, count($items));
         <table class="ttbp-table ttbp-program-table" style="width:100%; border-collapse:collapse; margin-top:-1px; border:1px solid #000; table-layout:fixed; background:#fff;">
             <colgroup>
                 <col style="width: 22%;">
-                <col style="width: 50%;">
-                <col style="width: 12%;">
-                <col style="width: 16%;">
+                <col style="width: 48%;">
+                <col style="width: 10%;">
+                <col style="width: 20%;">
             </colgroup>
             <tr>
                 <td class="ttbp-th-gray" style="border:1px solid #000; background-color:#d9d9d9; padding-left:8px; height:26px; vertical-align:middle; text-align:left; font-weight:bold; font-size:13px; color:#000;">
@@ -213,10 +213,10 @@ $total_rows = max($min_rows, count($items));
                 <td style="border:1px solid #000; padding-left:10px; height:26px; vertical-align:middle; text-align:left; font-size:13px; font-weight:500; color:#000;">
                     <?= htmlspecialchars($ttbp['realisasi_program']); ?>
                 </td>
-                <td class="ttbp-th-gray text-center" style="border:1px solid #000; background-color:#d9d9d9; height:26px; vertical-align:middle; text-align:center; font-weight:bold; font-size:13px; color:#000;">
+                <td class="ttbp-th-gray text-center" style="border:1px solid #000; background-color:#d9d9d9; height:26px; vertical-align:middle; text-align:center; font-weight:bold; font-size:12px; color:#000;">
                     Periode
                 </td>
-                <td class="text-center" style="border:1px solid #000; height:26px; vertical-align:middle; text-align:center; font-size:13px; font-weight:500; color:#000;">
+                <td class="text-center font-monospace" style="border:1px solid #000; height:26px; vertical-align:middle; text-align:center; font-size:11px; font-weight:600; color:#000; letter-spacing:-0.2px; white-space:nowrap; padding:2px 4px;">
                     <?= htmlspecialchars($ttbp['periode']); ?>
                 </td>
             </tr>

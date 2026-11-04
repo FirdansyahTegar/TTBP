@@ -179,13 +179,14 @@ class Ttbp_excel {
 
         $sheet->setCellValue('G6', 'Periode');
         $sheet->getStyle('G6')->applyFromArray([
-            'font' => ['bold' => true],
+            'font' => ['bold' => true, 'size' => 10],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
             'fill' => $gray_fill
         ]);
 
         $sheet->setCellValue('H6', $ttbp['periode']);
         $sheet->getStyle('H6')->applyFromArray([
+            'font' => ['size' => 9],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER]
         ]);
 
