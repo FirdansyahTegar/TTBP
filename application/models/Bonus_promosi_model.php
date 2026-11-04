@@ -279,15 +279,8 @@ class Bonus_promosi_model extends CI_Model {
                 $qty = 1;
             }
 
-            // Keterangan: Faktur Promo / Faktur Realisasi jika ada
-            $ket = '';
-            if (!empty($item_row['faktur_promo'])) {
-                $ket .= 'Faktur Promo: ' . $item_row['faktur_promo'] . ' ';
-            }
-            if (!empty($item_row['faktur']) && $item_row['faktur'] !== '-') {
-                $ket .= 'Faktur: ' . $item_row['faktur'];
-            }
-            $ket = trim($ket) ?: ($item_row['keterangan'] ?: null);
+            // Keterangan dari kolom keterangan pada tabel
+            $ket = !empty($item_row['keterangan']) ? trim($item_row['keterangan']) : null;
 
             $this->db->insert('ttbp_items', [
                 'ttbp_id'     => $ttbp_id,

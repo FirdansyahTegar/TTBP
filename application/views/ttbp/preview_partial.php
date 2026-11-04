@@ -267,7 +267,9 @@ $total_rows = max($min_rows, count($items));
                         <td style="text-align:center; height:24px; vertical-align:middle; font-size:13px; font-weight:bold; color:#000;">
                             <?= htmlspecialchars($items[0]['satuan']); ?>
                         </td>
-                        <td style="height:24px; vertical-align:middle; font-size:13px; color:#000;"></td>
+                        <td style="text-align:left; padding-left:8px; height:24px; vertical-align:middle; font-size:13px; color:#000;">
+                            <?= !empty($items[0]['keterangan']) ? htmlspecialchars($items[0]['keterangan']) : '&nbsp;'; ?>
+                        </td>
                     </tr>
                     <!-- BARIS 2: PAJAK (PPH) & NOMINAL MINUS -->
                     <tr>
@@ -279,8 +281,8 @@ $total_rows = max($min_rows, count($items));
                                 <span><?= $items[1]['jumlah_fmt']; ?></span>
                             </div>
                         </td>
-                        <td style="height:24px; vertical-align:middle; font-size:13px; color:#000;"></td>
-                        <td style="height:24px; vertical-align:middle; font-size:13px; color:#000;"></td>
+                        <td style="height:24px; vertical-align:middle; font-size:13px; color:#000;">&nbsp;</td>
+                        <td style="height:24px; vertical-align:middle; font-size:13px; color:#000;">&nbsp;</td>
                     </tr>
                     <!-- BARIS KOSONG PENYEIMBANG TINGGI CONTINUOUS FORM (CF K4) -->
                     <tr><td colspan="5" style="height:22px; border:none;">&nbsp;</td></tr>

@@ -824,6 +824,7 @@ class Ttbp_model extends CI_Model {
             $total_nominal_fmt = number_format($netto, 0, ',', '.');
 
             $sat_uang = (!empty($r['satuan']) && strtolower($r['satuan']) !== 'unit' && strtolower($r['satuan']) !== 'paket') ? $r['satuan'] : 'OTP';
+            $ket_uang = !empty($r['keterangan']) ? trim($r['keterangan']) : '';
 
             // Baris 1: Uang
             $items[] = [
@@ -832,7 +833,7 @@ class Ttbp_model extends CI_Model {
                 'jumlah'      => $gross,
                 'jumlah_fmt'  => number_format($gross, 0, ',', '.'),
                 'satuan'      => $sat_uang,
-                'keterangan'  => '',
+                'keterangan'  => $ket_uang,
                 'is_currency' => true,
                 'is_minus'    => false
             ];
@@ -859,10 +860,7 @@ class Ttbp_model extends CI_Model {
                     $qty = 1;
                 }
 
-                $ket = '';
-                if (!empty($r['faktur_promo'])) $ket .= 'Faktur Promo: ' . $r['faktur_promo'] . ' ';
-                if (!empty($r['faktur']) && $r['faktur'] !== '-') $ket .= 'Faktur: ' . $r['faktur'];
-                if (!empty($r['keterangan'])) $ket .= ' ' . $r['keterangan'];
+                $ket = !empty($r['keterangan']) ? trim($r['keterangan']) : '';
 
                 $items[] = [
                     'no_urut'     => $no_urut++,

@@ -220,7 +220,7 @@ class Ttbp_excel {
             $sheet->setCellValue('B8', 'Uang');
             $sheet->setCellValue('F8', 'Rp  ' . $items[0]['jumlah_fmt']);
             $sheet->setCellValue('G8', $items[0]['satuan']);
-            $sheet->setCellValue('H8', '');
+            $sheet->setCellValue('H8', !empty($items[0]['keterangan']) ? $items[0]['keterangan'] : '');
 
             $sheet->getStyle('A8')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle('B8')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);

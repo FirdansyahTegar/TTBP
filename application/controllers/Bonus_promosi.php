@@ -130,9 +130,7 @@ class Bonus_promosi extends CI_Controller {
                 $qty = 1;
             }
 
-            $ket = '';
-            if (!empty($r['faktur_promo'])) $ket .= 'Faktur Promo: ' . $r['faktur_promo'] . ' ';
-            if (!empty($r['faktur']) && $r['faktur'] !== '-') $ket .= 'Faktur: ' . $r['faktur'];
+            $ket = !empty($r['keterangan']) ? trim($r['keterangan']) : '';
 
             $auto_data['items'][] = [
                 'no_urut'     => $no++,
