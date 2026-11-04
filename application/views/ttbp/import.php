@@ -4,9 +4,14 @@
         <span class="text-muted fw-semibold" style="font-size: 0.85rem;">
             <i class="bi bi-file-earmark-excel-fill text-success me-1"></i> Import Data Excel Bonus Promosi
         </span>
-        <a href="<?= site_url('ttbp'); ?>" class="btn btn-outline-secondary btn-sm px-3 shadow-sm">
-            <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar
-        </a>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size: 0.75rem;">
+                <i class="bi bi-lightning-charge-fill me-1"></i> SimpleXLSX Ultra Fast & Anti-Timeout
+            </span>
+            <a href="<?= site_url('ttbp'); ?>" class="btn btn-outline-secondary btn-sm px-3 shadow-sm">
+                <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar
+            </a>
+        </div>
     </div>
 
     <!-- Alert Status -->
@@ -78,7 +83,7 @@
         </p>
 
         <div class="table-responsive">
-            <table class="table table-bordered table-sm align-middle text-center mb-0" style="font-size: 0.76rem;">
+            <table class="table table-bordered table-sm align-middle text-center mb-0" style="font-size: 0.74rem;">
                 <thead class="table-light">
                     <tr>
                         <th style="background-color: #d8e2bd;">1</th>
@@ -101,6 +106,9 @@
                         <th style="background-color: #d8e2bd;">18</th>
                         <th style="background-color: #d8e2bd;">19</th>
                         <th style="background-color: #d8e2bd;">20</th>
+                        <th style="background-color: #d8e2bd;">21</th>
+                        <th style="background-color: #d8e2bd;">22</th>
+                        <th style="background-color: #d8e2bd;">23</th>
                     </tr>
                     <tr>
                         <th>No.</th>
@@ -119,8 +127,11 @@
                         <th>Qty</th>
                         <th>Satuan</th>
                         <th>Volume Prog</th>
-                        <th>Periode Prog</th>
-                        <th>Faktur / at</th>
+                        <th>Sat. Vol</th>
+                        <th>Periode Awal</th>
+                        <th>Periode Akhir</th>
+                        <th>Faktur</th>
+                        <th>at</th>
                         <th>tgl kembali</th>
                         <th>Keterangan</th>
                     </tr>

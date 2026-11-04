@@ -79,51 +79,11 @@ class Ttbp extends CI_Controller {
     }
 
     /**
-     * Form Input Data Baru (Kolom Sama dengan Excel)
+     * Input data manual ditiadakan, dialihkan ke Import Excel
      */
     public function create() {
-        $data['title']           = 'Input Data Bonus Promosi';
-        $data['is_edit']         = false;
-        $data['next_no']         = $this->Ttbp_model->get_next_no_laporan();
-        $data['programs_master'] = $this->Ttbp_model->search_programs_master('', 100);
-        $data['row']     = [
-            'id'                   => '',
-            'no_urut_lap'          => $data['next_no'],
-            'tanggal_ttbp'         => date('Y-m-d'),
-            'nomor_ttbp'           => '',
-            'tgl_sdh_dipotong'     => '',
-            'faktur_promo'         => '',
-            'kode_kios'            => '',
-            'nama_pembeli'         => '',
-            'alamat_manual'        => '',
-            'salesman_manual'      => '',
-            'penerima_manual'      => '',
-            'value_produk_program' => '',
-            'program'              => '',
-            'nama_barang'          => '',
-            'potong_nota'          => '',
-            'pajak'                => '',
-            'total_bonus'          => '',
-            'qty'                  => '1',
-            'satuan'               => 'unit',
-            'volume_prog'          => '',
-            'satuan_vol'           => 'Ltr',
-            'periode_prog_awal'    => '',
-            'periode_prog_akhir'   => '',
-            'periode_prog_raw'     => '',
-            'faktur'               => '',
-            'kode_wilayah'         => '',
-            'tgl_kembali_ttbp'     => '',
-            'keterangan'           => '',
-            'dibuat_oleh'          => 'Nonik Dia',
-            'disetujui_oleh'       => '',
-            'perhatian'            => "Bila Terjadi Retur/Faktur Batal, Sehingga\nTarget Tidak Tercapai, Maka Barang Promosi\nYang Telah Diterima Harus Dikembalikan\nSesuai Dengan Jumlah Retur/Faktur Batal"
-        ];
-
-        $this->load->view('layouts/header', $data);
-        $this->load->view('layouts/sidebar');
-        $this->load->view('ttbp/form', $data);
-        $this->load->view('layouts/footer');
+        $this->session->set_flashdata('info', 'Input data manual telah dialihkan ke fitur Import Excel.');
+        redirect('ttbp/import');
     }
 
     /**
@@ -268,6 +228,9 @@ class Ttbp extends CI_Controller {
      * AJAX endpoint: Upload File Excel (.xlsx, .xls, .csv)
      */
     public function import_file_ajax() {
+        @set_time_limit(300);
+        @ini_set('memory_limit', '512M');
+
         if (empty($_FILES['excel_file']['tmp_name'])) {
             $this->output->set_content_type('application/json')->set_output(json_encode([
                 'status'  => false,
@@ -298,6 +261,9 @@ class Ttbp extends CI_Controller {
      * AJAX endpoint: Import Text Paste dari Clipboard Excel
      */
     public function import_paste_ajax() {
+        @set_time_limit(300);
+        @ini_set('memory_limit', '512M');
+
         $raw_text = $this->input->post('raw_text');
         $periode  = $this->input->post('periode_laporan', TRUE) ?: 'Januari - Desember 2026';
 

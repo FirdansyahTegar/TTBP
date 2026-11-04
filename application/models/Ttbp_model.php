@@ -828,6 +828,48 @@ class Ttbp_model extends CI_Model {
     /**
      * Import baris data dari text paste (tab-separated dari Excel)
      */
+    /**
+     * Helper parsing tanggal dari data Excel (baik serial number numerik maupun string teks)
+     */
+    public function parse_excel_date($val) {
+        if ($val === null || $val === '' || $val === '-' || $val === '0' || $val === 0) {
+            return null;
+        }
+        $val = trim((string)$val);
+        if ($val === '' || $val === '-' || $val === '0') {
+            return null;
+        }
+
+        // Jika Excel serial number (misal 46029 -> 2026-01-07)
+        if (is_numeric($val) && floatval($val) > 20000 && floatval($val) < 80000) {
+            $timestamp = ($val - 25569) * 86400;
+            return gmdate('Y-m-d', (int)round($timestamp));
+        }
+
+        // Coba strtotime langsung
+        $t = strtotime($val);
+        if ($t !== false && $t > 0) {
+            return date('Y-m-d', $t);
+        }
+
+        // Tangani format bulan Indonesia (misal: 7-Jan-26, 12-Nov-25, 03-Ags-25, 20-Des-26)
+        $indo_months = [
+            'jan' => 'Jan', 'feb' => 'Feb', 'mar' => 'Mar', 'apr' => 'Apr',
+            'mei' => 'May', 'jun' => 'Jun', 'jul' => 'Jul', 'ags' => 'Aug',
+            'agu' => 'Aug', 'sep' => 'Sep', 'okt' => 'Oct', 'nov' => 'Nov', 'des' => 'Dec'
+        ];
+        $val_norm = str_ireplace(array_keys($indo_months), array_values($indo_months), strtolower($val));
+        $t2 = strtotime($val_norm);
+        if ($t2 !== false && $t2 > 0) {
+            return date('Y-m-d', $t2);
+        }
+
+        return null;
+    }
+
+    /**
+     * Import teks tabel dari clipboard (Copy-Paste dari Excel)
+     */
     public function import_laporan_paste($raw_text, $periode_laporan = 'Januari - Desember 2026') {
         if (empty(trim($raw_text))) return 0;
         $lines = explode("\n", trim($raw_text));
@@ -838,199 +880,188 @@ class Ttbp_model extends CI_Model {
             if (empty($line)) continue;
             $cols = explode("\t", $line);
             if (count($cols) < 5) $cols = str_getcsv($line);
-
-            if (stripos($cols[0], 'No') !== false || stripos($cols[1] ?? '', 'Tanggal') !== false) {
-                continue;
-            }
-
-            $nama = trim($cols[6] ?? '');
-            $prog = trim($cols[8] ?? '');
-            if (empty($nama) && empty($prog)) continue;
-
-            $rows[] = [
-                'no'                   => trim($cols[0] ?? ''),
-                'tanggal_ttbp'         => trim($cols[1] ?? ''),
-                'nomor_ttbp'           => trim($cols[2] ?? '') ?: trim($cols[0] ?? ''),
-                'tgl_sdh_dipotong'     => trim($cols[3] ?? ''),
-                'faktur_promo'         => trim($cols[4] ?? ''),
-                'kode_kios'            => trim($cols[5] ?? ''),
-                'nama_pembeli'         => $nama,
-                'value_produk_program' => trim($cols[7] ?? '0'),
-                'program'              => $prog,
-                'nama_barang'          => trim($cols[9] ?? ''),
-                'potong_nota'          => trim($cols[10] ?? '0'),
-                'pajak'                => trim($cols[11] ?? '0'),
-                'total_bonus'          => trim($cols[12] ?? '0'),
-                'qty'                  => trim($cols[13] ?? '0'),
-                'satuan'               => trim($cols[14] ?? ''),
-                'volume_prog'          => trim($cols[15] ?? '0'),
-                'satuan_vol'           => trim($cols[16] ?? ''),
-                'periode_prog_awal'    => trim($cols[17] ?? ''),
-                'periode_prog_akhir'   => trim($cols[18] ?? ''),
-                'periode_prog_raw'     => (trim($cols[17] ?? '') && trim($cols[18] ?? '')) ? (trim($cols[17] ?? '') . ' - ' . trim($cols[18] ?? '')) : '',
-                'faktur'               => trim($cols[19] ?? ''),
-                'kode_wilayah'         => trim($cols[20] ?? ''),
-                'tgl_kembali_ttbp'     => trim($cols[21] ?? ''),
-                'keterangan'           => trim($cols[22] ?? '')
-            ];
+            $rows[] = $cols;
         }
 
-        return $this->import_laporan_batch($rows, $periode_laporan);
+        return $this->_process_and_insert_raw_rows($rows, $periode_laporan);
     }
 
     /**
-     * Import baris data dari file Excel (.xlsx / .xls / .csv) menggunakan PhpSpreadsheet
+     * Import baris data dari berkas Excel (.xlsx / .xls / .csv)
+     * Menggunakan SimpleXLSX dan SimpleXLS untuk kecepatan tinggi & hemat memori.
      */
     public function import_laporan_excel_file($file_path, $periode_laporan = 'Januari - Desember 2026') {
         require_once FCPATH . 'vendor/autoload.php';
 
-        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file_path);
-        $worksheet = $spreadsheet->getActiveSheet();
-        $highestRow = $worksheet->getHighestDataRow();
-        $highestColumn = $worksheet->getHighestDataColumn();
-
         $rows = [];
-        $header_found = false;
+        $parsed = false;
 
-        for ($r = 1; $r <= $highestRow; $r++) {
-            $val0 = trim((string)$worksheet->getCell('A' . $r)->getValue());
-            $val1 = trim((string)$worksheet->getCell('B' . $r)->getValue());
-            $val2 = trim((string)$worksheet->getCell('C' . $r)->getValue());
+        // Cek header berkas (magic bytes)
+        $fp = @fopen($file_path, 'rb');
+        $magic = $fp ? fread($fp, 4) : '';
+        if ($fp) fclose($fp);
+
+        $is_xlsx = (substr($magic, 0, 4) === "PK\x03\x04");
+        $is_xls  = (substr($magic, 0, 4) === "\xd0\xcf\x11\xe0");
+
+        // 1. Jika format .xlsx (ZIP PK) atau default
+        if ($is_xlsx || (!$is_xls && class_exists('\\Shuchkin\\SimpleXLSX'))) {
+            if ($xlsx = \Shuchkin\SimpleXLSX::parse($file_path)) {
+                $rows = $xlsx->rows();
+                $parsed = true;
+            }
+        }
+
+        // 2. Jika format .xls (OLE2) atau SimpleXLSX gagal
+        if (!$parsed && ($is_xls || class_exists('\\Shuchkin\\SimpleXLS'))) {
+            if ($xls = \Shuchkin\SimpleXLS::parse($file_path)) {
+                $rows = $xls->rows();
+                $parsed = true;
+            }
+        }
+
+        // 3. Fallback CSV
+        if (!$parsed) {
+            if (($handle = @fopen($file_path, 'r')) !== FALSE) {
+                while (($data = fgetcsv($handle, 10000, ",")) !== FALSE) {
+                    $rows[] = $data;
+                }
+                fclose($handle);
+                $parsed = !empty($rows);
+            }
+        }
+
+        // 4. Jika masih gagal membaca
+        if (!$parsed || empty($rows)) {
+            $err = \Shuchkin\SimpleXLSX::parseError() ?: (\Shuchkin\SimpleXLS::parseError() ?: 'Berkas tidak dapat diparse');
+            throw new Exception("Gagal membaca berkas Excel: " . $err);
+        }
+
+        return $this->_process_and_insert_raw_rows($rows, $periode_laporan);
+    }
+
+    /**
+     * Memproses baris raw dari Excel/CSV, memetakan 23 kolom, dan batch insert per-chunk 250 baris
+     */
+    protected function _process_and_insert_raw_rows($rows, $periode_laporan = 'Januari - Desember 2026') {
+        if (empty($rows)) return 0;
+
+        $header_found = false;
+        $batch = [];
+        $now = date('Y-m-d H:i:s');
+
+        foreach ($rows as $row) {
+            $col0 = trim((string)($row[0] ?? ''));
+            $col1 = trim((string)($row[1] ?? ''));
+            $col2 = trim((string)($row[2] ?? ''));
 
             // Deteksi baris header
             if (!$header_found) {
-                if (stripos($val0, 'No') !== false || stripos($val1, 'Tanggal') !== false || stripos($val2, 'TTBP') !== false) {
+                if (stripos($col0, 'No') !== false || stripos($col1, 'Tanggal') !== false || stripos($col2, 'TTBP') !== false) {
                     $header_found = true;
                 }
                 continue;
             }
 
-            // Baca nilai sel per kolom
-            // A: No, B: Tgl TTBP, C: TTBP, D: Sdh dipotong, E: Faktur Promo, F: Kode, G: Nama Pembeli,
-            // H: Value Produk, I: Program, J: Nama Barang, K: potong nota, L: Pajak, M: Total Bonus,
-            // N: Qty, O: Satuan, P: Volume Prog, Q: Satuan Vol, R: Periode Awal, S: Periode Akhir,
-            // T: Faktur, U: at, V: tgl kembali, W: Keterangan
-            $no          = $val0;
-            $tgl_ttbp    = $this->_format_excel_date($worksheet->getCell('B' . $r));
-            $ttbp        = trim((string)$worksheet->getCell('C' . $r)->getValue());
-            $sdh_potong  = $this->_format_excel_date($worksheet->getCell('D' . $r));
-            $faktur_promo= trim((string)$worksheet->getCell('E' . $r)->getValue());
-            $kode        = trim((string)$worksheet->getCell('F' . $r)->getValue());
-            $nama        = trim((string)$worksheet->getCell('G' . $r)->getValue());
-            $val_prod    = $worksheet->getCell('H' . $r)->getValue();
-            $prog        = trim((string)$worksheet->getCell('I' . $r)->getValue());
-            $nama_barang = trim((string)$worksheet->getCell('J' . $r)->getValue());
-            $pot_nota    = $worksheet->getCell('K' . $r)->getValue();
-            $pajak       = $worksheet->getCell('L' . $r)->getValue();
-            $tot_bonus   = $worksheet->getCell('M' . $r)->getValue();
-            $qty         = $worksheet->getCell('N' . $r)->getValue();
-            $satuan      = trim((string)$worksheet->getCell('O' . $r)->getValue());
-            $vol_prog    = $worksheet->getCell('P' . $r)->getValue();
-            $sat_vol     = trim((string)$worksheet->getCell('Q' . $r)->getValue());
-            $tgl_awal    = $this->_format_excel_date($worksheet->getCell('R' . $r));
-            $tgl_akhir   = $this->_format_excel_date($worksheet->getCell('S' . $r));
-            $faktur      = trim((string)$worksheet->getCell('T' . $r)->getValue());
-            $at          = trim((string)$worksheet->getCell('U' . $r)->getValue());
-            $tgl_kembali = $this->_format_excel_date($worksheet->getCell('V' . $r));
-            $ket         = trim((string)$worksheet->getCell('W' . $r)->getValue());
+            // Abaikan baris sub-header (misal baris 'at' di kolom 19/20)
+            if (trim((string)($row[19] ?? '')) === 'at' || (empty($col0) && empty($col1) && empty($col2) && empty($row[6] ?? ''))) {
+                continue;
+            }
 
-            if (empty($nama) && empty($prog)) continue;
+            $nama = trim((string)($row[6] ?? ''));
+            $prog = trim((string)($row[8] ?? ''));
+            // Jika nama dan program kosong, berarti baris kosong di akhir sheet Excel -> skip!
+            if (empty($nama) && empty($prog)) {
+                continue;
+            }
 
-            $rows[] = [
-                'no'                   => $no,
+            $tgl_ttbp    = $this->parse_excel_date($row[1] ?? null);
+            $tgl_potong  = $this->parse_excel_date($row[3] ?? null);
+            $tgl_awal    = $this->parse_excel_date($row[17] ?? null);
+            $tgl_akhir   = $this->parse_excel_date($row[18] ?? null);
+            $tgl_kembali = $this->parse_excel_date($row[21] ?? null);
+
+            $val_prod  = floatval(str_replace(',', '', (string)($row[7] ?? 0)));
+            $pot_nota  = floatval(str_replace(',', '', (string)($row[10] ?? 0)));
+            $pajak     = floatval(str_replace(',', '', (string)($row[11] ?? 0)));
+            $tot_bonus = floatval(str_replace(',', '', (string)($row[12] ?? 0)));
+            $qty       = floatval(str_replace(',', '', (string)($row[13] ?? 0)));
+            $vol_prog  = floatval(str_replace(',', '', (string)($row[15] ?? 0)));
+
+            $faktur_promo = trim((string)($row[4] ?? ''));
+            $kode_kios    = trim((string)($row[5] ?? ''));
+            $satuan       = trim((string)($row[14] ?? ''));
+            $satuan_vol   = trim((string)($row[16] ?? ''));
+            $faktur       = trim((string)($row[19] ?? ''));
+            $at           = trim((string)($row[20] ?? ''));
+            $ket          = trim((string)($row[22] ?? ''));
+
+            $batch[] = [
+                'no_urut_lap'          => $col0,
                 'tanggal_ttbp'         => $tgl_ttbp,
-                'nomor_ttbp'           => $ttbp ?: $no,
-                'tgl_sdh_dipotong'     => $sdh_potong,
-                'faktur_promo'         => $faktur_promo,
-                'kode_kios'            => $kode,
+                'nomor_ttbp'           => trim((string)($row[2] ?? '')) ?: $col0,
+                'tgl_sdh_dipotong'     => $tgl_potong,
+                'faktur_promo'         => ($faktur_promo !== '-' && $faktur_promo !== '') ? $faktur_promo : null,
+                'kode_kios'            => ($kode_kios !== '-' && $kode_kios !== '') ? $kode_kios : null,
                 'nama_pembeli'         => $nama,
                 'value_produk_program' => $val_prod,
                 'program'              => $prog,
-                'nama_barang'          => $nama_barang,
+                'nama_barang'          => trim((string)($row[9] ?? '')),
                 'potong_nota'          => $pot_nota,
                 'pajak'                => $pajak,
                 'total_bonus'          => $tot_bonus,
                 'qty'                  => $qty,
-                'satuan'               => $satuan,
+                'satuan'               => ($satuan !== '-' && $satuan !== '0' && $satuan !== '') ? $satuan : null,
                 'volume_prog'          => $vol_prog,
-                'satuan_vol'           => $sat_vol,
+                'satuan_vol'           => ($satuan_vol !== '-' && $satuan_vol !== '0' && $satuan_vol !== '') ? $satuan_vol : null,
                 'periode_prog_awal'    => $tgl_awal,
                 'periode_prog_akhir'   => $tgl_akhir,
                 'periode_prog_raw'     => ($tgl_awal && $tgl_akhir) ? ($tgl_awal . ' - ' . $tgl_akhir) : '',
-                'faktur'               => $faktur,
-                'kode_wilayah'         => $at,
+                'faktur'               => ($faktur !== '-' && $faktur !== '') ? $faktur : null,
+                'kode_wilayah'         => ($at !== '-' && $at !== '') ? $at : null,
                 'tgl_kembali_ttbp'     => $tgl_kembali,
-                'keterangan'           => $ket
-            ];
-        }
-
-        return $this->import_laporan_batch($rows, $periode_laporan);
-    }
-
-    /**
-     * Batch insert parsed rows ke tabel laporan_bonus_promosi
-     */
-    public function import_laporan_batch($rows, $periode_laporan = 'Januari - Desember 2026') {
-        if (empty($rows)) return 0;
-        $batch = [];
-
-        foreach ($rows as $r) {
-            $tgl_ttbp    = !empty($r['tanggal_ttbp']) ? date('Y-m-d', strtotime($r['tanggal_ttbp'])) : null;
-            $tgl_potong  = !empty($r['tgl_sdh_dipotong']) ? date('Y-m-d', strtotime($r['tgl_sdh_dipotong'])) : null;
-            $tgl_kembali = !empty($r['tgl_kembali_ttbp']) ? date('Y-m-d', strtotime($r['tgl_kembali_ttbp'])) : null;
-            $tgl_awal    = !empty($r['periode_prog_awal']) ? date('Y-m-d', strtotime($r['periode_prog_awal'])) : null;
-            $tgl_akhir   = !empty($r['periode_prog_akhir']) ? date('Y-m-d', strtotime($r['periode_prog_akhir'])) : null;
-
-            $batch[] = [
-                'no_urut_lap'          => isset($r['no']) ? trim($r['no']) : null,
-                'tanggal_ttbp'         => $tgl_ttbp,
-                'nomor_ttbp'           => isset($r['nomor_ttbp']) ? trim($r['nomor_ttbp']) : null,
-                'tgl_sdh_dipotong'     => $tgl_potong,
-                'faktur_promo'         => (!empty($r['faktur_promo']) && $r['faktur_promo'] !== '-') ? trim($r['faktur_promo']) : null,
-                'kode_kios'            => (!empty($r['kode_kios']) && $r['kode_kios'] !== '-') ? trim($r['kode_kios']) : null,
-                'nama_pembeli'         => isset($r['nama_pembeli']) ? trim($r['nama_pembeli']) : null,
-                'value_produk_program' => isset($r['value_produk_program']) ? floatval(str_replace(',', '', $r['value_produk_program'])) : 0.00,
-                'program'              => isset($r['program']) ? trim($r['program']) : null,
-                'nama_barang'          => isset($r['nama_barang']) ? trim($r['nama_barang']) : null,
-                'potong_nota'          => isset($r['potong_nota']) ? floatval(str_replace(',', '', $r['potong_nota'])) : 0.00,
-                'pajak'                => isset($r['pajak']) ? floatval(str_replace(',', '', $r['pajak'])) : 0.00,
-                'total_bonus'          => isset($r['total_bonus']) ? floatval(str_replace(',', '', $r['total_bonus'])) : 0.00,
-                'qty'                  => isset($r['qty']) ? floatval(str_replace(',', '', $r['qty'])) : 0.00,
-                'satuan'               => (!empty($r['satuan']) && $r['satuan'] !== '-') ? trim($r['satuan']) : null,
-                'volume_prog'          => isset($r['volume_prog']) ? floatval(str_replace(',', '', $r['volume_prog'])) : 0.00,
-                'satuan_vol'           => (!empty($r['satuan_vol']) && $r['satuan_vol'] !== '-') ? trim($r['satuan_vol']) : null,
-                'periode_prog_awal'    => $tgl_awal,
-                'periode_prog_akhir'   => $tgl_akhir,
-                'periode_prog_raw'     => isset($r['periode_prog_raw']) ? trim($r['periode_prog_raw']) : null,
-                'faktur'               => (!empty($r['faktur']) && $r['faktur'] !== '-') ? trim($r['faktur']) : null,
-                'kode_wilayah'         => (!empty($r['kode_wilayah']) && $r['kode_wilayah'] !== '-') ? trim($r['kode_wilayah']) : null,
-                'tgl_kembali_ttbp'     => $tgl_kembali,
-                'keterangan'           => isset($r['keterangan']) ? trim($r['keterangan']) : null,
+                'keterangan'           => $ket ?: null,
                 'status_ttbp'          => $tgl_kembali ? 'returned' : 'pending',
                 'periode_laporan'      => $periode_laporan,
-                'created_at'           => date('Y-m-d H:i:s'),
-                'updated_at'           => date('Y-m-d H:i:s')
+                'created_at'           => $now,
+                'updated_at'           => $now
             ];
         }
 
-        if (!empty($batch)) {
-            $this->db->insert_batch('laporan_bonus_promosi', $batch);
-            return count($batch);
+        if (empty($batch)) {
+            return 0;
         }
-        return 0;
+
+        // Batch chunk insert dalam transaksi database untuk performa maksimal & anti-timeout
+        $chunks = array_chunk($batch, 250);
+        $this->db->trans_start();
+        foreach ($chunks as $chunk) {
+            $this->db->insert_batch('laporan_bonus_promosi', $chunk);
+        }
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === FALSE) {
+            throw new Exception("Gagal menyimpan data ke database saat proses batch insert.");
+        }
+
+        return count($batch);
     }
 
     /**
-     * Helper parsing tanggal dari sel Excel
+     * Batch insert parsed rows ke tabel laporan_bonus_promosi (legacy wrapper)
+     */
+    public function import_laporan_batch($rows, $periode_laporan = 'Januari - Desember 2026') {
+        return $this->_process_and_insert_raw_rows($rows, $periode_laporan);
+    }
+
+    /**
+     * Helper parsing tanggal dari sel Excel (backward compatibility)
      */
     protected function _format_excel_date($cell) {
-        $val = $cell->getValue();
-        if (empty($val) || $val === '-') return null;
-        if (\PhpOffice\PhpSpreadsheet\Shared\Date::isDateTime($cell)) {
-            return date('Y-m-d', \PhpOffice\PhpSpreadsheet\Shared\Date::excelToTimestamp($val));
+        if (is_object($cell)) {
+            return $this->parse_excel_date($cell->getValue());
         }
-        $time = strtotime($val);
-        return $time ? date('Y-m-d', $time) : null;
+        return $this->parse_excel_date($cell);
     }
 
     /**

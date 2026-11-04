@@ -121,15 +121,9 @@ document.addEventListener('keydown', function(e) {
                 <span>Bonus Promosi (TTBP)</span>
             </a>
         </li>
-        <li class="<?= ($current_uri_1 == 'ttbp' && $current_uri_2 == 'create') ? 'active' : ''; ?>">
-            <a href="<?= site_url('ttbp/create'); ?>" onclick="if(window.innerWidth < 992) closeSidebarMobile()">
-                <i class="bi bi-plus-circle text-success"></i> 
-                <span>Input Data Baru</span>
-            </a>
-        </li>
         <li class="<?= ($current_uri_1 == 'ttbp' && $current_uri_2 == 'import') ? 'active' : ''; ?>">
             <a href="<?= site_url('ttbp/import'); ?>" onclick="if(window.innerWidth < 992) closeSidebarMobile()">
-                <i class="bi bi-file-earmark-arrow-up text-warning"></i> 
+                <i class="bi bi-cloud-arrow-up-fill text-success"></i> 
                 <span>Import Excel</span>
             </a>
         </li>

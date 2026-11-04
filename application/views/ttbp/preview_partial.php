@@ -13,22 +13,28 @@ $total_rows = max($min_rows, count($items));
 ?>
 
 <style>
+/* Format Cetak Continuous Form CF K4 W PRS (Ukuran Kertas 241x280 mm bagi dua = 241x140 mm) */
+@page {
+    size: 241mm 140mm;
+    margin: 0mm;
+}
 .ttbp-sheet-container {
     display: flex;
     justify-content: center;
     background-color: #eaedf2 !important;
-    padding: 24px 16px !important;
+    padding: 20px 10px !important;
     font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
     color: #000000 !important;
     border-radius: 8px;
     width: 100%;
     overflow-x: auto;
+    box-sizing: border-box !important;
 }
 .ttbp-sheet {
-    width: 100%;
-    max-width: 820px;
+    width: 215mm;
+    max-width: 100%;
     background: #ffffff !important;
-    border: 2px solid #000000 !important;
+    border: 1.5px solid #000000 !important;
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16) !important;
     box-sizing: border-box !important;
     margin: 0 auto;
@@ -44,7 +50,7 @@ $total_rows = max($min_rows, count($items));
 .ttbp-table td, 
 .ttbp-table th {
     border: 1px solid #000000 !important;
-    padding: 4px 6px !important;
+    padding: 3px 6px !important;
     font-size: 13px !important;
     color: #000000 !important;
     background-color: #ffffff;
@@ -70,27 +76,68 @@ $total_rows = max($min_rows, count($items));
     print-color-adjust: exact !important;
 }
 .ttbp-main-title {
-    font-size: 19px !important;
+    font-size: 18px !important;
     font-weight: 800 !important;
     letter-spacing: 0.5px !important;
     color: #000000 !important;
 }
 .ttbp-nomor-val {
-    font-size: 16px !important;
+    font-size: 15px !important;
     font-weight: bold !important;
     color: #000000 !important;
 }
 @media print {
-    body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+    html, body {
+        width: 241mm !important;
+        height: 140mm !important;
+        background: #fff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        overflow: hidden !important;
+    }
     .no-print { display: none !important; }
-    .ttbp-sheet-container { padding: 0 !important; background: transparent !important; margin: 0 !important; }
-    .ttbp-sheet { box-shadow: none !important; border: 2px solid #000 !important; width: 100% !important; max-width: 100% !important; page-break-inside: avoid; }
-    .ttbp-th-gray { background-color: #d9d9d9 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .ttbp-sheet-container {
+        width: 241mm !important;
+        height: 140mm !important;
+        padding: 2.5mm 13mm !important; /* 13mm pinfeed clearance pada kiri & kanan CF K4 */
+        background: transparent !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: flex-start !important;
+        page-break-inside: avoid !important;
+        page-break-after: avoid !important;
+        break-inside: avoid !important;
+        break-after: avoid !important;
+    }
+    .ttbp-sheet {
+        box-shadow: none !important;
+        border: 1.5px solid #000 !important;
+        width: 215mm !important;
+        max-width: 215mm !important;
+        height: 135mm !important;
+        max-height: 135mm !important;
+        margin: 0 auto !important;
+        page-break-inside: avoid !important;
+        page-break-after: avoid !important;
+        break-inside: avoid !important;
+        break-after: avoid !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+    }
+    .ttbp-th-gray {
+        background-color: #d9d9d9 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
 }
 </style>
 
-<div class="ttbp-sheet-container" id="ttbp-print-sheet" style="display:flex; justify-content:center; background:#eaedf2; padding:24px 16px; border-radius:8px;">
-    <div class="ttbp-sheet" style="width:100%; max-width:820px; background:#fff; border:2px solid #000; box-shadow:0 4px 18px rgba(0,0,0,0.16); box-sizing:border-box;">
+<div class="ttbp-sheet-container" id="ttbp-print-sheet">
+    <div class="ttbp-sheet">
         
         <!-- HEADER SECTION DENGAN GARIS GANDA DI BAWAH -->
         <table class="ttbp-table ttbp-header-table" style="width:100%; border-collapse:collapse; margin:0; border:1px solid #000; border-bottom:3px double #000; table-layout:fixed; background:#fff;">

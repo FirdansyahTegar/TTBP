@@ -29,11 +29,8 @@
             <a href="<?= site_url('ttbp/export_list_excel') . '?' . http_build_query($filters); ?>" class="btn btn-outline-success btn-sm px-3 shadow-sm">
                 <i class="bi bi-file-earmark-excel me-1"></i> Export Rekap Excel
             </a>
-            <a href="<?= site_url('ttbp/import'); ?>" class="btn btn-outline-primary btn-sm px-3 shadow-sm">
-                <i class="bi bi-upload me-1"></i> Import Excel
-            </a>
-            <a href="<?= site_url('ttbp/create'); ?>" class="btn btn-primary btn-sm px-3 shadow-sm fw-medium">
-                <i class="bi bi-plus-lg me-1"></i> Input Data Baru
+            <a href="<?= site_url('ttbp/import'); ?>" class="btn btn-primary btn-sm px-3 shadow-sm fw-medium">
+                <i class="bi bi-cloud-arrow-up-fill me-1"></i> Import Excel
             </a>
         </div>
     </div>
@@ -297,7 +294,7 @@
                         <tr>
                             <td colspan="23" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
-                                Belum ada data bonus promosi. Klik <strong>Input Data Baru</strong> atau <strong>Import Excel</strong> untuk memulai.
+                                Belum ada data bonus promosi. Klik <strong>Import Excel</strong> untuk mengunggah file laporan.
                             </td>
                         </tr>
                     <?php else: ?>
