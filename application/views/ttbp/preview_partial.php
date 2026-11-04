@@ -2,11 +2,12 @@
 /**
  * Partial View: Lembar Fixed TTBP (Tanda Terima Barang Promosi)
  * Format fixed lembar cetak kertas Continuous Form CF K4 W PRS 4 ply
- * Dilengkapi border dan outline hitam tegas agar tertata rapi.
+ * Bagian dalam kolom item tanpa garis pemisah (persis format form resmi).
  */
 
 $tgl_display = !empty($ttbp['tanggal']) ? date('d M Y', strtotime($ttbp['tanggal'])) : date('d M Y');
 $items = !empty($ttbp['items']) ? $ttbp['items'] : [];
+$is_uang = !empty($ttbp['is_uang']);
 $min_rows = isset($fixed_rows) ? $fixed_rows : 6;
 $total_rows = max($min_rows, count($items));
 ?>
@@ -49,6 +50,20 @@ $total_rows = max($min_rows, count($items));
     background-color: #ffffff;
     box-sizing: border-box !important;
 }
+
+/* Bagian dalam item table TANPA GARIS */
+.ttbp-items-table tbody td {
+    border: none !important;
+    padding: 2px 6px !important;
+    font-size: 13px !important;
+    background-color: #ffffff !important;
+}
+.ttbp-items-table tbody {
+    border-left: 1px solid #000000 !important;
+    border-right: 1px solid #000000 !important;
+    border-bottom: 1px solid #000000 !important;
+}
+
 .ttbp-th-gray {
     background-color: #d9d9d9 !important;
     -webkit-print-color-adjust: exact !important;
@@ -77,8 +92,8 @@ $total_rows = max($min_rows, count($items));
 <div class="ttbp-sheet-container" id="ttbp-print-sheet" style="display:flex; justify-content:center; background:#eaedf2; padding:24px 16px; border-radius:8px;">
     <div class="ttbp-sheet" style="width:100%; max-width:820px; background:#fff; border:2px solid #000; box-shadow:0 4px 18px rgba(0,0,0,0.16); box-sizing:border-box;">
         
-        <!-- HEADER SECTION -->
-        <table class="ttbp-table ttbp-header-table" style="width:100%; border-collapse:collapse; margin:0; border:1px solid #000; table-layout:fixed; background:#fff;">
+        <!-- HEADER SECTION DENGAN GARIS GANDA DI BAWAH -->
+        <table class="ttbp-table ttbp-header-table" style="width:100%; border-collapse:collapse; margin:0; border:1px solid #000; border-bottom:3px double #000; table-layout:fixed; background:#fff;">
             <colgroup>
                 <col style="width: 22%;">
                 <col style="width: 56%;">
@@ -160,14 +175,14 @@ $total_rows = max($min_rows, count($items));
             </tr>
         </table>
 
-        <!-- ITEMS TABLE -->
+        <!-- ITEMS TABLE (BAGIAN DALAM TANPA GARIS PERSIS CONTOH GAMBAR) -->
         <table class="ttbp-table ttbp-items-table" style="width:100%; border-collapse:collapse; margin-top:-1px; border:1px solid #000; table-layout:fixed; background:#fff;">
             <colgroup>
-                <col style="width: 6%;">
-                <col style="width: 48%;">
-                <col style="width: 12%;">
-                <col style="width: 8%;">
-                <col style="width: 26%;">
+                <col style="width: 5%;">
+                <col style="width: 43%;">
+                <col style="width: 21%;">
+                <col style="width: 7%;">
+                <col style="width: 24%;">
             </colgroup>
             <thead>
                 <tr>
@@ -179,26 +194,78 @@ $total_rows = max($min_rows, count($items));
                 </tr>
             </thead>
             <tbody>
-                <?php for ($i = 0; $i < $total_rows; $i++): ?>
-                    <?php $item = isset($items[$i]) ? $items[$i] : null; ?>
-                    <tr class="ttbp-item-row">
-                        <td style="border:1px solid #000; text-align:center; height:24px; vertical-align:middle; font-size:13px; padding:3px 5px; color:#000;">
-                            <?= $item ? htmlspecialchars($item['no_urut']) : '&nbsp;'; ?>
+                <?php if ($is_uang): ?>
+                    <!-- BARIS 1: UANG & NOMINAL -->
+                    <tr>
+                        <td style="text-align:center; height:24px; vertical-align:middle; font-size:13px; color:#000;">1</td>
+                        <td style="text-align:left; padding-left:12px; height:24px; vertical-align:middle; font-size:13px; color:#000;">Uang</td>
+                        <td style="height:24px; vertical-align:middle; font-size:13px; color:#000; padding:2px 8px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span>Rp</span>
+                                <span><?= $items[0]['jumlah_fmt']; ?></span>
+                            </div>
                         </td>
-                        <td style="border:1px solid #000; text-align:left; padding-left:10px; height:24px; vertical-align:middle; font-size:13px; color:#000;">
-                            <?= $item ? htmlspecialchars($item['nama_barang']) : '&nbsp;'; ?>
+                        <td style="text-align:center; height:24px; vertical-align:middle; font-size:13px; font-weight:bold; color:#000;">
+                            <?= htmlspecialchars($items[0]['satuan']); ?>
                         </td>
-                        <td style="border:1px solid #000; text-align:right; padding-right:14px; height:24px; vertical-align:middle; font-size:13px; color:#000;">
-                            <?= $item ? floatval($item['jumlah']) : '&nbsp;'; ?>
+                        <td style="height:24px; vertical-align:middle; font-size:13px; color:#000;"></td>
+                    </tr>
+                    <!-- BARIS 2: PAJAK (PPH) & NOMINAL MINUS -->
+                    <tr>
+                        <td style="text-align:center; height:24px; vertical-align:middle; font-size:13px; color:#000;">2</td>
+                        <td style="text-align:left; padding-left:12px; height:24px; vertical-align:middle; font-size:13px; color:#000;">Pajak (PPh)</td>
+                        <td style="height:24px; vertical-align:middle; font-size:13px; color:#000; padding:2px 8px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span>Rp</span>
+                                <span><?= $items[1]['jumlah_fmt']; ?></span>
+                            </div>
                         </td>
-                        <td style="border:1px solid #000; text-align:center; height:24px; vertical-align:middle; font-size:13px; padding:3px 5px; color:#000;">
-                            <?= $item ? htmlspecialchars($item['satuan']) : '&nbsp;'; ?>
+                        <td style="height:24px; vertical-align:middle; font-size:13px; color:#000;"></td>
+                        <td style="height:24px; vertical-align:middle; font-size:13px; color:#000;"></td>
+                    </tr>
+                    <!-- BARIS KOSONG PENYEIMBANG TINGGI CONTINUOUS FORM (CF K4) -->
+                    <tr><td colspan="5" style="height:22px; border:none;">&nbsp;</td></tr>
+                    <tr><td colspan="5" style="height:22px; border:none;">&nbsp;</td></tr>
+                    <tr><td colspan="5" style="height:22px; border:none;">&nbsp;</td></tr>
+                    <!-- BARIS FOOTER: TOTAL & KETERANGAN (TRANSFER / POTONG NOTA) -->
+                    <tr>
+                        <td style="height:24px; border:none;"></td>
+                        <td style="text-align:right; font-weight:bold; font-size:13px; color:#000; padding-right:24px; vertical-align:middle; border:none;">
+                            Total
                         </td>
-                        <td style="border:1px solid #000; text-align:left; padding-left:8px; height:24px; vertical-align:middle; font-size:13px; color:#000;">
-                            <?= ($item && !empty($item['keterangan'])) ? htmlspecialchars($item['keterangan']) : '&nbsp;'; ?>
+                        <td style="height:24px; vertical-align:middle; font-size:13px; font-weight:bold; color:#000; padding:2px 8px; border:none;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span>Rp</span>
+                                <span><?= $ttbp['total_nominal_fmt']; ?></span>
+                            </div>
+                        </td>
+                        <td colspan="2" style="text-align:left; font-weight:bold; font-size:13px; color:#000; padding-left:10px; vertical-align:middle; border:none;">
+                            <?= htmlspecialchars($ttbp['footer_keterangan']); ?>
                         </td>
                     </tr>
-                <?php endfor; ?>
+                <?php else: ?>
+                    <!-- FORMAT BARANG FISIK BIASA (TANPA GARIS PEMISAH DI DALAM) -->
+                    <?php for ($i = 0; $i < $total_rows; $i++): ?>
+                        <?php $item = isset($items[$i]) ? $items[$i] : null; ?>
+                        <tr class="ttbp-item-row">
+                            <td style="text-align:center; height:24px; vertical-align:middle; font-size:13px; padding:3px 5px; color:#000;">
+                                <?= $item ? htmlspecialchars($item['no_urut']) : '&nbsp;'; ?>
+                            </td>
+                            <td style="text-align:left; padding-left:12px; height:24px; vertical-align:middle; font-size:13px; color:#000;">
+                                <?= $item ? htmlspecialchars($item['nama_barang']) : '&nbsp;'; ?>
+                            </td>
+                            <td style="text-align:right; padding-right:16px; height:24px; vertical-align:middle; font-size:13px; color:#000;">
+                                <?= $item ? (isset($item['jumlah_fmt']) ? $item['jumlah_fmt'] : floatval($item['jumlah'])) : '&nbsp;'; ?>
+                            </td>
+                            <td style="text-align:center; height:24px; vertical-align:middle; font-size:13px; padding:3px 5px; color:#000;">
+                                <?= $item ? htmlspecialchars($item['satuan']) : '&nbsp;'; ?>
+                            </td>
+                            <td style="text-align:left; padding-left:8px; height:24px; vertical-align:middle; font-size:13px; color:#000;">
+                                <?= ($item && !empty($item['keterangan'])) ? htmlspecialchars($item['keterangan']) : '&nbsp;'; ?>
+                            </td>
+                        </tr>
+                    <?php endfor; ?>
+                <?php endif; ?>
             </tbody>
         </table>
 

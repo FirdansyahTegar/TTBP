@@ -710,34 +710,97 @@ class Ttbp_model extends CI_Model {
             $periode = 'Januari - Desember 2026';
         }
 
+        // Tentukan apakah lembar TTBP ini untuk bonus 'Uang'
+        $is_uang = false;
+        foreach ($rows as $r) {
+            if (strtolower(trim($r['nama_barang'])) === 'uang') {
+                $is_uang = true;
+                break;
+            }
+        }
+
+        // Tentukan footer keterangan (Transfer atau Potong Nota)
+        // Aturan: untuk Mega Tani, Inti Tani, Alvin Tani / Toha selalu Transfer, selainnya Potong Nota
+        $nama_cek = strtolower($nama_kios . ' ' . ($first['nama_pembeli'] ?? '') . ' ' . ($first['kode_kios'] ?? ''));
+        $is_transfer = false;
+        if (strpos($nama_cek, 'mega tani') !== false || 
+            strpos($nama_cek, 'inti tani') !== false || 
+            strpos($nama_cek, 'alvin tani') !== false ||
+            strpos($nama_cek, 'toha') !== false) {
+            $is_transfer = true;
+        }
+        $footer_keterangan = $is_transfer ? 'Transfer' : 'Potong Nota';
+
         // Items list
         $items = [];
-        $no_urut = 1;
-        foreach ($rows as $r) {
-            $nama_item = $r['nama_barang'];
-            $qty = floatval($r['qty']);
-            $sat = !empty($r['satuan']) ? $r['satuan'] : 'Unit';
+        $total_nominal = 0;
+        $total_nominal_fmt = '';
 
-            if (strtolower($nama_item) === 'uang') {
-                $nama_item = 'Uang Tunai Bonus (Rp ' . number_format($r['total_bonus'], 0, ',', '.') . ')';
-                $qty = 1;
-                $sat = 'Paket';
-            } else if ($qty <= 0) {
-                $qty = 1;
+        if ($is_uang) {
+            $r = $rows[0];
+            $gross = floatval($r['total_bonus']);
+            $pajak = floatval($r['pajak']);
+            $potong = floatval($r['potong_nota']);
+
+            if ($gross <= 0 && ($potong > 0 || $pajak > 0)) {
+                $gross = $potong + $pajak;
             }
+            $netto = ($potong > 0) ? $potong : ($gross - $pajak);
+            $total_nominal = $netto;
+            $total_nominal_fmt = number_format($netto, 0, ',', '.');
 
-            $ket = '';
-            if (!empty($r['faktur_promo'])) $ket .= 'Faktur Promo: ' . $r['faktur_promo'] . ' ';
-            if (!empty($r['faktur']) && $r['faktur'] !== '-') $ket .= 'Faktur: ' . $r['faktur'];
-            if (!empty($r['keterangan'])) $ket .= ' ' . $r['keterangan'];
+            $sat_uang = (!empty($r['satuan']) && strtolower($r['satuan']) !== 'unit' && strtolower($r['satuan']) !== 'paket') ? $r['satuan'] : 'OTP';
 
+            // Baris 1: Uang
             $items[] = [
-                'no_urut'     => $no_urut++,
-                'nama_barang' => $nama_item,
-                'jumlah'      => $qty,
-                'satuan'      => $sat,
-                'keterangan'  => trim($ket)
+                'no_urut'     => 1,
+                'nama_barang' => 'Uang',
+                'jumlah'      => $gross,
+                'jumlah_fmt'  => number_format($gross, 0, ',', '.'),
+                'satuan'      => $sat_uang,
+                'keterangan'  => '',
+                'is_currency' => true,
+                'is_minus'    => false
             ];
+
+            // Baris 2: Pajak (PPh) angka minus
+            $items[] = [
+                'no_urut'     => 2,
+                'nama_barang' => 'Pajak (PPh)',
+                'jumlah'      => -$pajak,
+                'jumlah_fmt'  => '(' . number_format(abs($pajak), 0, ',', '.') . ')',
+                'satuan'      => '',
+                'keterangan'  => '',
+                'is_currency' => true,
+                'is_minus'    => true
+            ];
+        } else {
+            $no_urut = 1;
+            foreach ($rows as $r) {
+                $nama_item = $r['nama_barang'];
+                $qty = floatval($r['qty']);
+                $sat = !empty($r['satuan']) ? $r['satuan'] : 'Unit';
+
+                if ($qty <= 0) {
+                    $qty = 1;
+                }
+
+                $ket = '';
+                if (!empty($r['faktur_promo'])) $ket .= 'Faktur Promo: ' . $r['faktur_promo'] . ' ';
+                if (!empty($r['faktur']) && $r['faktur'] !== '-') $ket .= 'Faktur: ' . $r['faktur'];
+                if (!empty($r['keterangan'])) $ket .= ' ' . $r['keterangan'];
+
+                $items[] = [
+                    'no_urut'     => $no_urut++,
+                    'nama_barang' => $nama_item,
+                    'jumlah'      => $qty,
+                    'jumlah_fmt'  => (string)$qty,
+                    'satuan'      => $sat,
+                    'keterangan'  => trim($ket),
+                    'is_currency' => false,
+                    'is_minus'    => false
+                ];
+            }
         }
 
         return [
@@ -754,6 +817,10 @@ class Ttbp_model extends CI_Model {
             'dibuat_oleh'       => !empty($first['dibuat_oleh']) ? $first['dibuat_oleh'] : 'Nonik Dia',
             'disetujui_oleh'    => !empty($first['disetujui_oleh']) ? $first['disetujui_oleh'] : '',
             'perhatian'         => !empty($first['perhatian']) ? $first['perhatian'] : "Bila Terjadi Retur/Faktur Batal, Sehingga\nTarget Tidak Tercapai, Maka Barang Promosi\nYang Telah Diterima Harus Dikembalikan\nSesuai Dengan Jumlah Retur/Faktur Batal",
+            'is_uang'           => $is_uang,
+            'total_nominal'     => $total_nominal,
+            'total_nominal_fmt' => $total_nominal_fmt,
+            'footer_keterangan' => $footer_keterangan,
             'items'             => $items
         ];
     }

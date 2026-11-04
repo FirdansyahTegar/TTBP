@@ -79,6 +79,15 @@ class Ttbp_excel {
             ]
         ];
 
+        $border_outline_thin = [
+            'borders' => [
+                'outline' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color' => ['rgb' => '000000']
+                ]
+            ]
+        ];
+
         // Format tanggal display (contoh: 30 Oct 2026)
         $tgl_obj = !empty($ttbp['tanggal']) ? strtotime($ttbp['tanggal']) : time();
         $tgl_formatted = date('d M Y', $tgl_obj);
@@ -197,42 +206,103 @@ class Ttbp_excel {
         ]);
         $sheet->getRowDimension(7)->setRowHeight(22);
 
-        // --- ROWS 8+: ITEMS ---
+        // --- ROWS 8+: ITEMS (BAGIAN DALAM TANPA GARIS PERSIS CONTOH GAMBAR) ---
         $items = !empty($ttbp['items']) ? $ttbp['items'] : [];
+        $is_uang = !empty($ttbp['is_uang']);
         $current_row = 8;
-        $total_rows_needed = max(6, count($items)); // Pastikan minimal 6 baris agar proporsi CF K4 tetap fixed
+        $total_rows_needed = max(6, count($items));
 
-        for ($i = 0; $i < $total_rows_needed; $i++) {
-            $item = isset($items[$i]) ? $items[$i] : null;
+        if ($is_uang) {
+            // Baris 1: Uang
+            $sheet->setCellValue('A8', '1');
+            $sheet->mergeCells('B8:E8');
+            $sheet->setCellValue('B8', 'Uang');
+            $sheet->setCellValue('F8', 'Rp  ' . $items[0]['jumlah_fmt']);
+            $sheet->setCellValue('G8', $items[0]['satuan']);
+            $sheet->setCellValue('H8', '');
 
-            if ($item) {
-                $sheet->setCellValue('A' . $current_row, $item['no_urut']);
-                $sheet->mergeCells('B' . $current_row . ':E' . $current_row);
-                $sheet->setCellValue('B' . $current_row, $item['nama_barang']);
-                $sheet->setCellValue('F' . $current_row, $item['jumlah']);
-                $sheet->setCellValue('G' . $current_row, $item['satuan']);
-                $sheet->setCellValue('H' . $current_row, $item['keterangan']);
+            $sheet->getStyle('A8')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('B8')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+            $sheet->getStyle('F8')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle('G8')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('G8')->getFont()->setBold(true);
+            $sheet->getRowDimension(8)->setRowHeight(22);
 
-                $sheet->getStyle('A' . $current_row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                $sheet->getStyle('B' . $current_row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-                $sheet->getStyle('F' . $current_row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-                $sheet->getStyle('G' . $current_row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                $sheet->getStyle('H' . $current_row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-            } else {
-                $sheet->mergeCells('B' . $current_row . ':E' . $current_row);
-                $sheet->setCellValue('A' . $current_row, '');
-                $sheet->setCellValue('B' . $current_row, '');
-                $sheet->setCellValue('F' . $current_row, '');
-                $sheet->setCellValue('G' . $current_row, '');
-                $sheet->setCellValue('H' . $current_row, '');
+            // Baris 2: Pajak (PPh) angka minus
+            $sheet->setCellValue('A9', '2');
+            $sheet->mergeCells('B9:E9');
+            $sheet->setCellValue('B9', 'Pajak (PPh)');
+            $sheet->setCellValue('F9', 'Rp  ' . $items[1]['jumlah_fmt']);
+            $sheet->setCellValue('G9', '');
+            $sheet->setCellValue('H9', '');
+
+            $sheet->getStyle('A9')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('B9')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+            $sheet->getStyle('F9')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getRowDimension(9)->setRowHeight(22);
+
+            // Baris 10 - 12 kosong
+            for ($r = 10; $r <= 12; $r++) {
+                $sheet->mergeCells('B' . $r . ':E' . $r);
+                $sheet->setCellValue('A' . $r, '');
+                $sheet->setCellValue('B' . $r, '');
+                $sheet->setCellValue('F' . $r, '');
+                $sheet->setCellValue('G' . $r, '');
+                $sheet->setCellValue('H' . $r, '');
+                $sheet->getRowDimension($r)->setRowHeight(20);
             }
 
-            $sheet->getRowDimension($current_row)->setRowHeight(22);
-            $current_row++;
+            // Baris 13: Footer Total & Keterangan (Transfer / Potong Nota)
+            $sheet->setCellValue('A13', '');
+            $sheet->mergeCells('B13:E13');
+            $sheet->setCellValue('B13', 'Total');
+            $sheet->setCellValue('F13', 'Rp  ' . $ttbp['total_nominal_fmt']);
+            $sheet->mergeCells('G13:H13');
+            $sheet->setCellValue('G13', $ttbp['footer_keterangan']);
+
+            $sheet->getStyle('B13')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle('B13')->getFont()->setBold(true);
+            $sheet->getStyle('F13')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle('F13')->getFont()->setBold(true);
+            $sheet->getStyle('G13')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+            $sheet->getStyle('G13')->getFont()->setBold(true);
+            $sheet->getRowDimension(13)->setRowHeight(22);
+
+            $current_row = 14;
+        } else {
+            for ($i = 0; $i < $total_rows_needed; $i++) {
+                $item = isset($items[$i]) ? $items[$i] : null;
+
+                if ($item) {
+                    $sheet->setCellValue('A' . $current_row, $item['no_urut']);
+                    $sheet->mergeCells('B' . $current_row . ':E' . $current_row);
+                    $sheet->setCellValue('B' . $current_row, $item['nama_barang']);
+                    $sheet->setCellValue('F' . $current_row, isset($item['jumlah_fmt']) ? $item['jumlah_fmt'] : $item['jumlah']);
+                    $sheet->setCellValue('G' . $current_row, $item['satuan']);
+                    $sheet->setCellValue('H' . $current_row, $item['keterangan']);
+
+                    $sheet->getStyle('A' . $current_row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    $sheet->getStyle('B' . $current_row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                    $sheet->getStyle('F' . $current_row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                    $sheet->getStyle('G' . $current_row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    $sheet->getStyle('H' . $current_row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                } else {
+                    $sheet->mergeCells('B' . $current_row . ':E' . $current_row);
+                    $sheet->setCellValue('A' . $current_row, '');
+                    $sheet->setCellValue('B' . $current_row, '');
+                    $sheet->setCellValue('F' . $current_row, '');
+                    $sheet->setCellValue('G' . $current_row, '');
+                    $sheet->setCellValue('H' . $current_row, '');
+                }
+
+                $sheet->getRowDimension($current_row)->setRowHeight(22);
+                $current_row++;
+            }
         }
 
-        // Terapkan border pada seluruh tabel item
-        $sheet->getStyle('A7:H' . ($current_row - 1))->applyFromArray($border_all_thin);
+        // Terapkan border: Header diberi allBorders, Body item diberi outline saja (tanpa garis dalam)
+        $sheet->getStyle('A7:H7')->applyFromArray($border_all_thin);
+        $sheet->getStyle('A8:H' . ($current_row - 1))->applyFromArray($border_outline_thin);
 
         // --- FOOTER: PERHATIAN & TANDA TANGAN ---
         $footer_start = $current_row;
