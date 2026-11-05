@@ -901,6 +901,56 @@ class Ttbp_model extends CI_Model {
     }
 
     /**
+     * Dapatkan nomor TTBP berikutnya secara berurutan dan daftar pilihan TTBP
+     * untuk fitur cetak 1 kertas = 2 TTBP (Portrait Atas & Bawah).
+     */
+    public function get_next_and_selectable_ttbp($current_id, $current_nomor_raw, $limit = 150) {
+        // Cari TTBP berikutnya setelah ID saat ini
+        $next_row = $this->db->select('id, nomor_ttbp, tanggal_ttbp, nama_pembeli, nama_barang')
+                             ->from($this->table_laporan)
+                             ->where('id >', (int)$current_id)
+                             ->where('nomor_ttbp !=', $current_nomor_raw)
+                             ->where('nomor_ttbp IS NOT NULL', null, false)
+                             ->where('nomor_ttbp !=', '')
+                             ->order_by('id', 'ASC')
+                             ->limit(1)
+                             ->get()
+                             ->row_array();
+
+        $next_formatted = null;
+        if ($next_row) {
+            $next_formatted = self::format_nomor_ttbp($next_row['nomor_ttbp'], $next_row['tanggal_ttbp']);
+        }
+
+        // Daftar pilihan TTBP unik di sekitar data
+        $rows = $this->db->select('MIN(id) as id, nomor_ttbp, MAX(tanggal_ttbp) as tanggal_ttbp, MAX(nama_pembeli) as nama_pembeli, MAX(nama_barang) as nama_barang')
+                         ->from($this->table_laporan)
+                         ->where('nomor_ttbp IS NOT NULL', null, false)
+                         ->where('nomor_ttbp !=', '')
+                         ->group_by('nomor_ttbp')
+                         ->order_by('id', 'ASC')
+                         ->limit((int)$limit)
+                         ->get()
+                         ->result_array();
+
+        $options = [];
+        foreach ($rows as $r) {
+            $fmt = self::format_nomor_ttbp($r['nomor_ttbp'], $r['tanggal_ttbp']);
+            $options[] = [
+                'id'           => $r['id'],
+                'nomor_ttbp'   => $fmt,
+                'nama_pembeli' => $r['nama_pembeli'],
+                'nama_barang'  => $r['nama_barang']
+            ];
+        }
+
+        return [
+            'next_nomor' => $next_formatted,
+            'options'    => $options
+        ];
+    }
+
+    /**
      * Import baris data dari text paste (tab-separated dari Excel)
      */
     /**

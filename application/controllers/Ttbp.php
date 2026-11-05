@@ -291,15 +291,111 @@ class Ttbp extends CI_Controller {
     }
 
     /**
-     * Cetak Lembar TTBP Fisik Continuous Form (CF K4 W PRS 4 ply)
+     * Cetak Lembar TTBP Fisik Continuous Form (CF K4 W PRS 4 ply - 9.5 x 11 inch Portrait)
+     * Mendukung:
+     * - 1 TTBP tunggal (Slot Atas)
+     * - 2 TTBP per 1 lembar kertas 9.5 x 11 inch (Portrait: Slot Atas & Slot Bawah) via ?ttbp2=...
+     * - Multi-TTBP / Batch print (2 TTBP per lembar) via ?ids=C260001,C260002,...
      */
-    public function cetak($id_or_nomor) {
-        $ttbp = $this->Ttbp_model->get_ttbp_sheet_data($id_or_nomor);
-        if (!$ttbp) {
-            show_404();
+    public function cetak($id_or_nomor = null) {
+        $ids_param = $this->input->get('ids', TRUE);
+        $ttbp2_param = $this->input->get('ttbp2', TRUE);
+
+        $sheets = [];
+        $primary_ttbp = null;
+
+        if (!empty($ids_param)) {
+            $id_list = array_filter(array_map('trim', explode(',', $ids_param)));
+            foreach ($id_list as $item_id) {
+                $s = $this->Ttbp_model->get_ttbp_sheet_data($item_id);
+                if ($s) {
+                    $sheets[] = $s;
+                }
+            }
+            if (!empty($sheets)) {
+                $primary_ttbp = $sheets[0];
+            }
+        } else if (!empty($id_or_nomor)) {
+            $primary_ttbp = $this->Ttbp_model->get_ttbp_sheet_data($id_or_nomor);
+            if ($primary_ttbp) {
+                $sheets[] = $primary_ttbp;
+            }
         }
 
-        $this->load->view('ttbp/print', ['ttbp' => $ttbp]);
+        if (empty($sheets) || !$primary_ttbp) {
+            show_404();
+            return;
+        }
+
+        // Ambil informasi TTBP berikutnya & daftar pilihan untuk Slot Bawah (1 Kertas = 2 TTBP)
+        $adjacent = $this->Ttbp_model->get_next_and_selectable_ttbp($primary_ttbp['id'], $primary_ttbp['nomor_ttbp_raw']);
+
+        // Jika mode 1 kertas utama dan ada parameter ttbp2 (atau default pasangan)
+        if (empty($ids_param) && $ttbp2_param !== null && $ttbp2_param !== '' && $ttbp2_param !== 'none') {
+            if ($ttbp2_param === 'copy') {
+                $sheets[] = $primary_ttbp;
+            } else if ($ttbp2_param === 'next' && !empty($adjacent['next_nomor'])) {
+                $second = $this->Ttbp_model->get_ttbp_sheet_data($adjacent['next_nomor']);
+                if ($second) $sheets[] = $second;
+            } else {
+                $second = $this->Ttbp_model->get_ttbp_sheet_data($ttbp2_param);
+                if ($second) $sheets[] = $second;
+            }
+        }
+
+        $this->load->library('ttbp_lx310_direct');
+        $printers = $this->ttbp_lx310_direct->get_installed_printers();
+        $default_lx310 = $this->ttbp_lx310_direct->find_lx310_printer();
+
+        $this->load->view('ttbp/print', [
+            'ttbp'          => $primary_ttbp,
+            'sheets'        => $sheets,
+            'ttbp2_param'   => $ttbp2_param ?: 'none',
+            'next_nomor'    => $adjacent['next_nomor'],
+            'ttbp_options'  => $adjacent['options'],
+            'printers'      => $printers,
+            'default_lx310' => $default_lx310
+        ]);
+    }
+
+    /**
+     * AJAX endpoint: Cetak Langsung Presisi Tinggi ke Printer Epson LX-310 ESC/P
+     * Menggunakan engine GDI+ Millimeter (.NET PrintDocument) agar:
+     * - 100% lebar kertas terpakai penuh (bebas bug 2/3 lebar kertas di Chromium/Brave)
+     * - 100% garis tabel tercetak utuh tanpa ada garis hilang
+     * - Orientasi Portrait (1 Kertas 9.5 x 11 inch = 2 TTBP Atas & Bawah)
+     */
+    public function print_direct_lx310_ajax() {
+        $nomors = $this->input->post('nomors', TRUE);
+        $printer = $this->input->post('printer', TRUE);
+
+        if (empty($nomors) || !is_array($nomors)) {
+            $single = $this->input->post('nomor', TRUE);
+            $nomors = !empty($single) ? [$single] : [];
+        }
+
+        $sheets = [];
+        foreach ($nomors as $no) {
+            $no = trim((string)$no);
+            if ($no === '') continue;
+            $s = $this->Ttbp_model->get_ttbp_sheet_data($no);
+            if ($s) {
+                $sheets[] = $s;
+            }
+        }
+
+        if (empty($sheets)) {
+            $this->output->set_content_type('application/json')->set_output(json_encode([
+                'status'  => false,
+                'message' => 'Data TTBP tidak ditemukan untuk dicetak.'
+            ]));
+            return;
+        }
+
+        $this->load->library('ttbp_lx310_direct');
+        $result = $this->ttbp_lx310_direct->print_sheets($sheets, $printer);
+
+        $this->output->set_content_type('application/json')->set_output(json_encode($result));
     }
 
     /**

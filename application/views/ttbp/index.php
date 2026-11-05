@@ -328,9 +328,9 @@
                                             <i class="bi bi-eye"></i>
                                         </button>
 
-                                        <!-- Cetak Lembar TTBP Fisik -->
-                                        <a href="<?= site_url('ttbp/cetak/' . urlencode($formatted_ttbp_no ?: $r['nomor_ttbp']) . '?autoprint=1'); ?>" target="_blank" 
-                                           class="btn btn-xs btn-outline-dark" title="Cetak Lembar TTBP">
+                                        <!-- Cetak Lembar TTBP Fisik (CF K4 W PRS 9.5 x 11 inch Portrait) -->
+                                        <a href="<?= site_url('ttbp/cetak/' . urlencode($formatted_ttbp_no ?: $r['nomor_ttbp'])); ?>" target="_blank" 
+                                           class="btn btn-xs btn-outline-dark" title="Cetak Lembar TTBP (1 Kertas = 2 TTBP / LX-310)">
                                             <i class="bi bi-printer"></i>
                                         </a>
 
@@ -567,12 +567,15 @@
                 <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
                     Tutup
                 </button>
-                <div class="d-flex gap-2">
+                <div class="d-flex flex-wrap gap-2">
                     <a href="#" target="_blank" class="btn btn-outline-success btn-sm" id="btn-modal-excel-sheet">
                         <i class="bi bi-file-earmark-excel me-1"></i> Excel TTBP
                     </a>
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="btn-modal-direct-lx310" data-nomor="">
+                        <i class="bi bi-printer-fill me-1"></i> Langsung Cetak (LX-310)
+                    </button>
                     <a href="#" target="_blank" class="btn btn-primary btn-sm" id="btn-modal-print-sheet">
-                        <i class="bi bi-printer me-1"></i> Cetak Lembar TTBP
+                        <i class="bi bi-layout-split me-1"></i> Halaman Cetak (1 Kertas = 2 TTBP)
                     </a>
                 </div>
             </div>
@@ -744,13 +747,34 @@ $(document).ready(function() {
         var nomor = $(this).data('nomor');
         $('#preview-sheet-body').html('<div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><span class="small text-muted ms-2">Menyiapkan lembar TTBP...</span></div>');
         $('#btn-modal-excel-sheet').attr('href', '<?= site_url("ttbp/export_excel/"); ?>' + encodeURIComponent(nomor));
-        $('#btn-modal-print-sheet').attr('href', '<?= site_url("ttbp/cetak/"); ?>' + encodeURIComponent(nomor) + '?autoprint=1');
+        $('#btn-modal-print-sheet').attr('href', '<?= site_url("ttbp/cetak/"); ?>' + encodeURIComponent(nomor));
+        $('#btn-modal-direct-lx310').data('nomor', nomor);
         modalPreview.show();
 
         $.get('<?= site_url("ttbp/preview_partial_ajax/"); ?>' + encodeURIComponent(nomor), function(html) {
             $('#preview-sheet-body').html(html);
         }).fail(function() {
             $('#preview-sheet-body').html('<div class="alert alert-danger mb-0">Gagal memuat lembar TTBP.</div>');
+        });
+    });
+
+    // Cetak Langsung ke Epson LX-310 dari Modal Pratinjau
+    $('#btn-modal-direct-lx310').on('click', function() {
+        var $btn = $(this);
+        var nomor = $btn.data('nomor');
+        if (!nomor) return;
+        var origHtml = $btn.html();
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Mencetak...');
+        $.post('<?= site_url("ttbp/print_direct_lx310_ajax"); ?>', { nomors: [nomor] }, function(res) {
+            $btn.prop('disabled', false).html(origHtml);
+            if (res && res.status) {
+                alert('Berhasil dikirim ke printer ' + (res.printer || 'Epson LX-310') + '!');
+            } else {
+                alert('Gagal mencetak: ' + (res && res.message ? res.message : 'Unknown error'));
+            }
+        }, 'json').fail(function() {
+            $btn.prop('disabled', false).html(origHtml);
+            alert('Gagal menghubungi server untuk mencetak.');
         });
     });
 
