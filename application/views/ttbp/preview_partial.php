@@ -13,9 +13,9 @@ $total_rows = max($min_rows, count($items));
 ?>
 
 <style>
-/* Format Cetak Continuous Form CF K4 W PRS (Ukuran Kertas 241x280 mm bagi dua = 241x140 mm) */
+/* Format Cetak Continuous Form 215 x 280 mm / 215 x 140 mm (Portrait Epson LX-310) */
 @page {
-    size: 241mm 140mm;
+    size: portrait;
     margin: 0mm;
 }
 .ttbp-sheet-container {
@@ -100,10 +100,9 @@ $total_rows = max($min_rows, count($items));
 }
 @media print {
     html, body {
-        width: 241mm !important;
-        height: 140mm !important;
+        width: 215mm !important;
         background: #fff !important;
-        margin: 0 !important;
+        margin: 0 auto !important;
         padding: 0 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
@@ -111,15 +110,14 @@ $total_rows = max($min_rows, count($items));
     }
     .no-print { display: none !important; }
     .ttbp-sheet-container {
-        width: 241mm !important;
-        height: 140mm !important;
-        padding: 2.5mm 13mm !important; /* 13mm pinfeed clearance pada kiri & kanan CF K4 */
+        width: 215mm !important;
+        min-height: 135mm !important;
+        max-height: 140mm !important;
+        padding: 0 !important;
         background: transparent !important;
-        margin: 0 !important;
+        margin: 0 auto !important;
         box-sizing: border-box !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: flex-start !important;
+        display: block !important;
         page-break-inside: avoid !important;
         page-break-after: avoid !important;
         break-inside: avoid !important;

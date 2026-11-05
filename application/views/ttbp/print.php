@@ -7,9 +7,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
-        /* Format Cetak Continuous Form CF K4 W PRS (Ukuran Kertas 241x280 mm bagi dua = 241x140 mm) */
+        /* Format Cetak Continuous Form 215 x 280 mm / 215 x 140 mm (Portrait Epson LX-310) */
         @page {
-            size: 241mm 140mm; /* Continuous Form K4 PRS: 241mm x 140mm (9.5" x 5.5") */
+            size: portrait;
             margin: 0mm;
         }
 
@@ -60,10 +60,9 @@
 
         @media print {
             html, body {
-                width: 241mm !important;
-                height: 140mm !important;
+                width: 215mm !important;
                 background: #fff !important;
-                margin: 0 !important;
+                margin: 0 auto !important;
                 padding: 0 !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
@@ -73,22 +72,20 @@
                 display: none !important;
             }
             .print-canvas, #print-area-wrapper {
-                width: 241mm !important;
-                height: 140mm !important;
-                margin: 0 !important;
+                width: 215mm !important;
+                margin: 0 auto !important;
                 padding: 0 !important;
                 display: block !important;
             }
             .ttbp-sheet-container {
-                width: 241mm !important;
-                height: 140mm !important;
-                padding: 2.5mm 13mm !important; /* 13mm pinfeed clearance pada kiri & kanan CF K4 */
+                width: 215mm !important;
+                min-height: 135mm !important;
+                max-height: 140mm !important;
+                padding: 0 !important;
                 background: transparent !important;
-                margin: 0 !important;
+                margin: 0 auto !important;
                 box-sizing: border-box !important;
-                display: flex !important;
-                justify-content: center !important;
-                align-items: flex-start !important;
+                display: block !important;
                 page-break-inside: avoid !important;
                 page-break-after: avoid !important;
                 break-inside: avoid !important;
