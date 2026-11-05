@@ -4,6 +4,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class Ttbp_model extends CI_Model {
 
     protected $sales_db = null;
+    protected $table_laporan = 'laporan_bonus_promosi';
 
     public function __construct() {
         parent::__construct();
@@ -907,7 +908,7 @@ class Ttbp_model extends CI_Model {
     public function get_next_and_selectable_ttbp($current_id, $current_nomor_raw, $limit = 150) {
         // Cari TTBP berikutnya setelah ID saat ini
         $next_row = $this->db->select('id, nomor_ttbp, tanggal_ttbp, nama_pembeli, nama_barang')
-                             ->from($this->table_laporan)
+                             ->from('laporan_bonus_promosi')
                              ->where('id >', (int)$current_id)
                              ->where('nomor_ttbp !=', $current_nomor_raw)
                              ->where('nomor_ttbp IS NOT NULL', null, false)
@@ -924,7 +925,7 @@ class Ttbp_model extends CI_Model {
 
         // Daftar pilihan TTBP unik di sekitar data
         $rows = $this->db->select('MIN(id) as id, nomor_ttbp, MAX(tanggal_ttbp) as tanggal_ttbp, MAX(nama_pembeli) as nama_pembeli, MAX(nama_barang) as nama_barang')
-                         ->from($this->table_laporan)
+                         ->from('laporan_bonus_promosi')
                          ->where('nomor_ttbp IS NOT NULL', null, false)
                          ->where('nomor_ttbp !=', '')
                          ->group_by('nomor_ttbp')
