@@ -7,10 +7,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
-        /* Format Cetak Continuous Form 215 x 280 mm / 215 x 140 mm (Portrait Epson LX-310) */
+        /* Format Cetak Continuous Form 215 x 280 mm / Letter 8.5 x 11 in (Portrait Epson LX-310) */
         @page {
             size: portrait;
-            margin: 0mm;
+            margin: 4mm 5mm;
         }
 
         body {
@@ -60,30 +60,26 @@
 
         @media print {
             html, body {
-                width: 215mm !important;
-                background: #fff !important;
-                margin: 0 auto !important;
+                width: 100% !important;
+                background: #ffffff !important;
+                margin: 0 !important;
                 padding: 0 !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                overflow: hidden !important;
             }
             .no-print, .print-toolbar, #calibration-panel {
                 display: none !important;
             }
             .print-canvas, #print-area-wrapper {
-                width: 215mm !important;
-                margin: 0 auto !important;
+                width: 100% !important;
+                margin: 0 !important;
                 padding: 0 !important;
                 display: block !important;
             }
             .ttbp-sheet-container {
-                width: 215mm !important;
-                min-height: 135mm !important;
-                max-height: 140mm !important;
+                width: 100% !important;
+                height: auto !important;
                 padding: 0 !important;
                 background: transparent !important;
-                margin: 0 auto !important;
+                margin: 0 !important;
                 box-sizing: border-box !important;
                 display: block !important;
                 page-break-inside: avoid !important;
@@ -93,18 +89,18 @@
             }
             .ttbp-sheet {
                 box-shadow: none !important;
-                border: 1.5px solid #000 !important;
-                width: 215mm !important;
-                max-width: 215mm !important;
-                height: 135mm !important;
-                max-height: 135mm !important;
-                margin: 0 auto !important;
+                border: 2px solid #000000 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto !important;
+                max-height: none !important;
+                margin: 0 !important;
                 page-break-inside: avoid !important;
                 page-break-after: avoid !important;
                 break-inside: avoid !important;
                 break-after: avoid !important;
                 box-sizing: border-box !important;
-                overflow: hidden !important;
+                overflow: visible !important;
             }
         }
     </style>
