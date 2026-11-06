@@ -40,7 +40,10 @@ class Ttbp_model extends CI_Model {
      * Nama database sales_tracking (otomatis menyesuaikan Local vs Production karismaerp.com)
      */
     public function get_sales_db_name() {
-        $is_local = (isset($_SERVER['HTTP_HOST']) && in_array(explode(':', $_SERVER['HTTP_HOST'])[0], ['localhost', '127.0.0.1', '10.10.10.82'])) || (php_sapi_name() === 'cli');
+        $host_only = isset($_SERVER['HTTP_HOST']) ? explode(':', $_SERVER['HTTP_HOST'])[0] : '';
+        $is_local = in_array($host_only, ['localhost', '127.0.0.1', '10.10.10.12', '10.10.10.82'])
+                 || (preg_match('/^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/', $host_only) === 1)
+                 || (php_sapi_name() === 'cli');
         return $is_local ? 'sales_tracking' : (getenv('DB_SALES_DATABASE') ?: 'u676129830_salestracking');
     }
 
@@ -1084,7 +1087,15 @@ class Ttbp_model extends CI_Model {
      * Menggunakan SimpleXLSX dan SimpleXLS untuk kecepatan tinggi & hemat memori.
      */
     public function import_laporan_excel_file($file_path, $periode_laporan = 'Januari - Desember 2026') {
-        require_once FCPATH . 'vendor/autoload.php';
+        if (!class_exists('\\Shuchkin\\SimpleXLSX') && file_exists(APPPATH . 'third_party/SimpleXLSX.php')) {
+            require_once APPPATH . 'third_party/SimpleXLSX.php';
+        }
+        if (!class_exists('\\Shuchkin\\SimpleXLS') && file_exists(APPPATH . 'third_party/SimpleXLS.php')) {
+            require_once APPPATH . 'third_party/SimpleXLS.php';
+        }
+        if (!class_exists('\\Shuchkin\\SimpleXLSX') && file_exists(FCPATH . 'vendor/autoload.php')) {
+            require_once FCPATH . 'vendor/autoload.php';
+        }
 
         $rows = [];
         $parsed = false;

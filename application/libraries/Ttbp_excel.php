@@ -18,22 +18,39 @@ class Ttbp_excel {
     }
 
     /**
-     * Generate dan download Excel lembar TTBP
+     * Generate dan download Excel lembar TTBP (Kompatibel PHP 7.0+ dan PHP 7.4/8.x)
      */
     public function download_ttbp($ttbp, $filename = null) {
-        $spreadsheet = $this->create_ttbp_sheet($ttbp);
+        $safe_toko = preg_replace('/[^a-zA-Z0-9_-]/', '_', $ttbp['nama_kios']);
 
-        if (empty($filename)) {
-            $safe_toko = preg_replace('/[^a-zA-Z0-9_-]/', '_', $ttbp['nama_kios']);
-            $filename = 'TTBP_' . $ttbp['nomor_ttbp'] . '_' . $safe_toko . '.xlsx';
+        if (PHP_VERSION_ID >= 70400 && file_exists(FCPATH . 'vendor/autoload.php')) {
+            require_once FCPATH . 'vendor/autoload.php';
+            $spreadsheet = $this->create_ttbp_sheet($ttbp);
+
+            if (empty($filename)) {
+                $filename = 'TTBP_' . $ttbp['nomor_ttbp'] . '_' . $safe_toko . '.xlsx';
+            }
+
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Cache-Control: max-age=0');
+
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+            exit;
         }
 
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        // Fallback Native untuk PHP 7.0 - 7.3 (tanpa ketergantungan PhpSpreadsheet >= 7.4)
+        if (empty($filename)) {
+            $filename = 'TTBP_' . $ttbp['nomor_ttbp'] . '_' . $safe_toko . '.xls';
+        }
+        header('Content-Type: application/vnd.ms-excel; charset=utf-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
-
-        $writer = new Xlsx($spreadsheet);
-        $writer->save('php://output');
+        echo "\xEF\xBB\xBF";
+        if ($this->ci) {
+            echo $this->ci->load->view('ttbp/preview_partial', ['ttbp' => $ttbp, 'fixed_rows' => 6], TRUE);
+        }
         exit;
     }
 

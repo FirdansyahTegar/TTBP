@@ -118,7 +118,7 @@ document.addEventListener('keydown', function(e) {
         <li class="<?= (($current_uri_1 == 'ttbp' && empty($current_uri_2)) || $current_uri_1 == 'dashboard' || empty($current_uri_1)) ? 'active' : ''; ?>">
             <a href="<?= site_url('ttbp'); ?>" onclick="if(window.innerWidth < 992) closeSidebarMobile()">
                 <i class="bi bi-file-earmark-spreadsheet text-primary"></i> 
-                <span>Bonus Promosi (TTBP)</span>
+                <span>TTBP</span>
             </a>
         </li>
         <li class="<?= ($current_uri_1 == 'ttbp' && $current_uri_2 == 'import') ? 'active' : ''; ?>">

@@ -455,6 +455,61 @@ class Ttbp extends CI_Controller {
 
         $list = $this->Ttbp_model->get_laporan_list($filters, null, null, 'id', 'ASC');
 
+        // Jika server berjalan di PHP < 7.4 (misal PHP 7.0.0 di 10.10.10.12), gunakan export native Excel tanpa PhpSpreadsheet
+        if (PHP_VERSION_ID < 70400 || !file_exists(FCPATH . 'vendor/autoload.php')) {
+            $filename = 'Rekap_Bonus_Promosi_' . date('Ymd_His') . '.xls';
+            header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Cache-Control: max-age=0');
+            echo "\xEF\xBB\xBF";
+            echo '<table border="1">';
+            echo '<tr><th colspan="22" style="font-size:14pt;text-align:left;">BONUS PROMOSI PERIODE JANUARI - DESEMBER 2026</th></tr>';
+            echo '<tr style="background:#D8E2BD;font-weight:bold;">'
+               . '<th>No.</th><th>Tanggal TTBP</th><th>TTBP</th><th>Sdh dipotong</th><th>Faktur Promo</th>'
+               . '<th>Kode</th><th>Nama Pembeli</th><th>Value Produk Program</th><th>Program</th><th>Nama Barang</th>'
+               . '<th>potong nota</th><th>Pajak</th><th>Total Bonus</th><th>Qty</th><th>Satuan</th>'
+               . '<th>Volume Prog</th><th>Periode Awal</th><th>Periode Akhir</th><th>Faktur</th><th>at</th>'
+               . '<th>tanggal kembali TTBP</th><th>Keterangan</th></tr>';
+            $idx = 1;
+            foreach ($list as $r) {
+                $tgl_awal = !empty($r['periode_prog_awal']) ? date('d-M-y', strtotime($r['periode_prog_awal'])) : '';
+                $tgl_akhir = !empty($r['periode_prog_akhir']) ? date('d-M-y', strtotime($r['periode_prog_akhir'])) : '';
+                if (empty($tgl_awal) && !empty($r['periode_prog_raw'])) {
+                    $parts = explode(' - ', $r['periode_prog_raw']);
+                    $tgl_awal = isset($parts[0]) ? trim($parts[0]) : '';
+                    $tgl_akhir = isset($parts[1]) ? trim($parts[1]) : '';
+                }
+                $vol_str = floatval($r['volume_prog']) > 0 ? (floatval($r['volume_prog']) . ' ' . $r['satuan_vol']) : '';
+                echo '<tr>'
+                   . '<td>' . (intval($r['no_urut_lap']) > 0 ? intval($r['no_urut_lap']) : $idx) . '</td>'
+                   . '<td>' . ($r['tanggal_ttbp'] ? date('d-M-y', strtotime($r['tanggal_ttbp'])) : '') . '</td>'
+                   . '<td>' . htmlspecialchars(Ttbp_model::format_nomor_ttbp($r['nomor_ttbp'], $r['tanggal_ttbp'])) . '</td>'
+                   . '<td>' . ($r['tgl_sdh_dipotong'] ? date('d-M-y', strtotime($r['tgl_sdh_dipotong'])) : '') . '</td>'
+                   . '<td>' . htmlspecialchars((string)$r['faktur_promo']) . '</td>'
+                   . '<td>' . htmlspecialchars((string)$r['kode_kios']) . '</td>'
+                   . '<td>' . htmlspecialchars((string)$r['nama_pembeli']) . '</td>'
+                   . '<td>' . floatval($r['value_produk_program']) . '</td>'
+                   . '<td>' . htmlspecialchars((string)$r['program']) . '</td>'
+                   . '<td>' . htmlspecialchars((string)$r['nama_barang']) . '</td>'
+                   . '<td>' . floatval($r['potong_nota']) . '</td>'
+                   . '<td>' . floatval($r['pajak']) . '</td>'
+                   . '<td>' . floatval($r['total_bonus']) . '</td>'
+                   . '<td>' . floatval($r['qty']) . '</td>'
+                   . '<td>' . htmlspecialchars((string)$r['satuan']) . '</td>'
+                   . '<td>' . htmlspecialchars($vol_str) . '</td>'
+                   . '<td>' . htmlspecialchars($tgl_awal) . '</td>'
+                   . '<td>' . htmlspecialchars($tgl_akhir) . '</td>'
+                   . '<td>' . htmlspecialchars((string)$r['faktur']) . '</td>'
+                   . '<td>' . htmlspecialchars((string)$r['kode_wilayah']) . '</td>'
+                   . '<td>' . ($r['tgl_kembali_ttbp'] ? date('d-M-y', strtotime($r['tgl_kembali_ttbp'])) : '') . '</td>'
+                   . '<td>' . htmlspecialchars((string)$r['keterangan']) . '</td>'
+                   . '</tr>';
+                $idx++;
+            }
+            echo '</table>';
+            exit;
+        }
+
         require_once FCPATH . 'vendor/autoload.php';
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
