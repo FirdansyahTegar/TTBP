@@ -182,7 +182,7 @@ try {
         $fontSubHeader = New-Object System.Drawing.Font("Arial", 9.0,  [System.Drawing.FontStyle]::Bold)
         $fontRegular   = New-Object System.Drawing.Font("Arial", 9.5,  [System.Drawing.FontStyle]::Regular)
         $fontMedium    = New-Object System.Drawing.Font("Arial", 9.5,  [System.Drawing.FontStyle]::Bold)
-        $fontPeriode   = New-Object System.Drawing.Font("Arial", 8.0,  [System.Drawing.FontStyle]::Bold)
+        $fontPeriode   = New-Object System.Drawing.Font("Arial", 9.5,  [System.Drawing.FontStyle]::Bold)
         $fontPerhatian = New-Object System.Drawing.Font("Arial", 8.0,  [System.Drawing.FontStyle]::Regular)
         $fontPerhBold  = New-Object System.Drawing.Font("Arial", 8.2,  [System.Drawing.FontStyle]::Bold)
 
@@ -274,7 +274,7 @@ try {
         # =========================================================================
         $hProg = 8.0
         $wP1 = [float]($w * 0.21)
-        $wP2 = [float]($w * 0.45)
+        $wP2 = [float]($w * 0.44)
         $wP3 = [float]($w * 0.09)
         $wP4 = [float]($w - $wP1 - $wP2 - $wP3)
 

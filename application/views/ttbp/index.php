@@ -328,9 +328,9 @@
                                             <i class="bi bi-eye"></i>
                                         </button>
 
-                                        <!-- Cetak Lembar TTBP Fisik (CF K4 W PRS 9.5 x 11 inch Portrait) -->
+                                        <!-- Cetak Lembar TTBP Fisik -->
                                         <a href="<?= site_url('ttbp/cetak/' . urlencode($formatted_ttbp_no ?: $r['nomor_ttbp'])); ?>" target="_blank" 
-                                           class="btn btn-xs btn-outline-dark" title="Cetak Lembar TTBP (1 Kertas = 2 TTBP / LX-310)">
+                                           class="btn btn-xs btn-outline-dark" title="Cetak TTBP">
                                             <i class="bi bi-printer"></i>
                                         </a>
 
@@ -553,7 +553,7 @@
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center">
                 <h6 class="modal-title fw-bold text-dark mb-0">
-                    <i class="bi bi-file-earmark-text text-primary me-2"></i>Pratinjau Lembar TTBP (CF K4 W PRS 4-ply)
+                    <i class="bi bi-file-earmark-text text-primary me-2"></i>Pratinjau Lembar TTBP
                 </h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -572,10 +572,10 @@
                         <i class="bi bi-file-earmark-excel me-1"></i> Excel TTBP
                     </a>
                     <button type="button" class="btn btn-outline-primary btn-sm" id="btn-modal-direct-lx310" data-nomor="">
-                        <i class="bi bi-printer-fill me-1"></i> Langsung Cetak (LX-310)
+                        <i class="bi bi-printer-fill me-1"></i> Langsung Cetak
                     </button>
                     <a href="#" target="_blank" class="btn btn-primary btn-sm" id="btn-modal-print-sheet">
-                        <i class="bi bi-layout-split me-1"></i> Halaman Cetak (1 Kertas = 2 TTBP)
+                        <i class="bi bi-printer me-1"></i> Cetak TTBP
                     </a>
                 </div>
             </div>

@@ -37,6 +37,14 @@ class Ttbp_model extends CI_Model {
     }
 
     /**
+     * Nama database sales_tracking (otomatis menyesuaikan Local vs Production karismaerp.com)
+     */
+    public function get_sales_db_name() {
+        $is_local = (isset($_SERVER['HTTP_HOST']) && in_array(explode(':', $_SERVER['HTTP_HOST'])[0], ['localhost', '127.0.0.1', '10.10.10.82'])) || (php_sapi_name() === 'cli');
+        return $is_local ? 'sales_tracking' : (getenv('DB_SALES_DATABASE') ?: 'u676129830_salestracking');
+    }
+
+    /**
      * Search data toko dari st_master_toko
      */
     public function search_toko($keyword, $limit = 25) {
@@ -52,12 +60,14 @@ class Ttbp_model extends CI_Model {
                 $db->group_end();
             }
             $db->limit($limit);
-            return $db->get()->result_array();
+            $q = $db->get();
+            return $q ? $q->result_array() : array();
         }
 
-        // Fallback jika sales_db tidak terkoneksi secara terpisah, coba query langsung via default db
+        // Fallback jika sales_db tidak terkoneksi secara terpisah, query lintas DB pada server MySQL yang sama
+        $sales_db_name = $this->get_sales_db_name();
         $this->db->select('kode_toko, nama_toko, alamat, kota, sc, kontak_person, telepon');
-        $this->db->from('sales_tracking.st_master_toko');
+        $this->db->from($sales_db_name . '.st_master_toko');
         if (!empty($keyword)) {
             $this->db->group_start();
             $this->db->like('kode_toko', $keyword);
@@ -76,9 +86,12 @@ class Ttbp_model extends CI_Model {
     public function get_toko_by_kode($kode) {
         $db = $this->get_sales_db();
         if ($db) {
-            return $db->where('kode_toko', $kode)->get('st_master_toko')->row_array();
+            $q = $db->where('kode_toko', $kode)->get('st_master_toko');
+            if ($q) return $q->row_array();
         }
-        return $this->db->where('kode_toko', $kode)->get('sales_tracking.st_master_toko')->row_array();
+        $sales_db_name = $this->get_sales_db_name();
+        $q2 = $this->db->where('kode_toko', $kode)->get($sales_db_name . '.st_master_toko');
+        return $q2 ? $q2->row_array() : null;
     }
 
     /**
@@ -952,6 +965,60 @@ class Ttbp_model extends CI_Model {
     }
 
     /**
+     * Pencarian seluruh nomor TTBP (tanpa batas 150) untuk fitur Search Slot Bawah pada halaman cetak
+     */
+    public function search_selectable_ttbp($keyword = '', $exclude_nomor = '', $limit = 60) {
+        $this->db->select('MIN(id) as id, nomor_ttbp, MAX(tanggal_ttbp) as tanggal_ttbp, MAX(nama_pembeli) as nama_pembeli, MAX(nama_barang) as nama_barang')
+                 ->from('laporan_bonus_promosi')
+                 ->where('nomor_ttbp IS NOT NULL', null, false)
+                 ->where('nomor_ttbp !=', '');
+
+        $kw = trim((string)$keyword);
+        if ($kw !== '') {
+            // Jika user mengetik format C260250 atau #250, ekstrak juga digit angkanya (250)
+            $kw_digits = '';
+            if (preg_match('/^#?C\d{2}(\d+)$/i', $kw, $m)) {
+                $kw_digits = (string)intval($m[1]);
+            } elseif (preg_match('/^#?0*(\d+)$/', $kw, $m2)) {
+                $kw_digits = $m2[1];
+            }
+
+            $this->db->group_start();
+            $this->db->like('nomor_ttbp', $kw);
+            if ($kw_digits !== '') {
+                $this->db->or_like('nomor_ttbp', $kw_digits);
+            }
+            $this->db->or_like('nama_pembeli', $kw);
+            $this->db->or_like('kode_kios', $kw);
+            $this->db->or_like('nama_barang', $kw);
+            $this->db->or_like('program', $kw);
+            $this->db->group_end();
+        }
+
+        $rows = $this->db->group_by('nomor_ttbp')
+                         ->order_by('id', 'ASC')
+                         ->limit((int)$limit)
+                         ->get()
+                         ->result_array();
+
+        $results = [];
+        foreach ($rows as $r) {
+            $fmt = self::format_nomor_ttbp($r['nomor_ttbp'], $r['tanggal_ttbp']);
+            if ($exclude_nomor !== '' && strcasecmp($fmt, $exclude_nomor) === 0) {
+                continue;
+            }
+            $results[] = [
+                'id'           => $r['id'],
+                'nomor_ttbp'   => $fmt,
+                'nama_pembeli' => $r['nama_pembeli'] ?: '-',
+                'nama_barang'  => $r['nama_barang'] ?: ''
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
      * Import baris data dari text paste (tab-separated dari Excel)
      */
     /**
@@ -1232,21 +1299,38 @@ class Ttbp_model extends CI_Model {
     }
 
     /**
-     * Ambil map data toko dari sales_tracking
+     * Ambil map data toko dari sales_tracking (mendukung u676129830_salestracking di production)
      */
     public function get_toko_map($kodes = []) {
-        $db = $this->get_sales_db();
-        if (!$db || empty($kodes)) return [];
+        if (empty($kodes)) return [];
         $unique_kodes = array_unique(array_filter($kodes));
         if (empty($unique_kodes)) return [];
 
-        $db->where_in('kode_toko', $unique_kodes);
-        $query = $db->get('st_master_toko');
         $result = [];
-        if ($query) {
-            foreach ($query->result_array() as $row) {
-                $result[$row['kode_toko']] = $row;
+        $db = $this->get_sales_db();
+        if ($db) {
+            $db->where_in('kode_toko', $unique_kodes);
+            $query = $db->get('st_master_toko');
+            if ($query) {
+                foreach ($query->result_array() as $row) {
+                    $result[$row['kode_toko']] = $row;
+                }
+                return $result;
             }
+        }
+
+        // Fallback lintas database di server MySQL yang sama (jika user DB memiliki akses ke u676129830_salestracking)
+        try {
+            $sales_db_name = $this->get_sales_db_name();
+            $this->db->where_in('kode_toko', $unique_kodes);
+            $query2 = $this->db->get($sales_db_name . '.st_master_toko');
+            if ($query2) {
+                foreach ($query2->result_array() as $row) {
+                    $result[$row['kode_toko']] = $row;
+                }
+            }
+        } catch (Exception $e) {
+            // Abaikan jika tidak ada akses lintas DB
         }
         return $result;
     }

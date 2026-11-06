@@ -86,15 +86,15 @@ $total_rows = max($min_rows, count($items));
     border-top: 2px solid #000000 !important;
 }
 
-/* Bagian Periode TTBP agar ringkas, pas dan tidak keluar kotak */
+/* Bagian Periode TTBP (+2px -> 12.5px, tetap pas di dalam kotak) */
 .ttbp-periode-val {
     font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
-    font-size: 10.5px !important;
+    font-size: 12.5px !important;
     font-weight: bold !important;
     letter-spacing: -0.2px !important;
     white-space: nowrap !important;
     text-align: center !important;
-    padding: 2px 4px !important;
+    padding: 2px 3px !important;
     overflow: hidden !important;
 }
 
@@ -231,9 +231,9 @@ $total_rows = max($min_rows, count($items));
         <table class="ttbp-table ttbp-program-table">
             <colgroup>
                 <col style="width: 21%;">
-                <col style="width: 45%;">
+                <col style="width: 44%;">
                 <col style="width: 9%;">
-                <col style="width: 25%;">
+                <col style="width: 26%;">
             </colgroup>
             <tr>
                 <td class="ttbp-th-gray" style="padding-left: 8px; height: 8mm; vertical-align: middle; text-align: left; font-weight: bold; font-size: 13px;">
@@ -242,7 +242,7 @@ $total_rows = max($min_rows, count($items));
                 <td style="padding-left: 10px; height: 8mm; vertical-align: middle; text-align: left; font-size: 13px; font-weight: 600;">
                     <?= htmlspecialchars($ttbp['realisasi_program']); ?>
                 </td>
-                <td class="ttbp-th-gray text-center" style="height: 8mm; vertical-align: middle; text-align: center; font-weight: bold; font-size: 12px;">
+                <td class="ttbp-th-gray text-center" style="height: 8mm; vertical-align: middle; text-align: center; font-weight: bold; font-size: 13px;">
                     Periode
                 </td>
                 <td class="text-center ttbp-periode-val" style="height: 8mm; vertical-align: middle;">
@@ -302,16 +302,16 @@ $total_rows = max($min_rows, count($items));
                         <td style="height: 7mm; vertical-align: middle; font-size: 13px;">&nbsp;</td>
                     </tr>
                     <!-- BARIS PENYEIMBANG TINGGI SETENGAH KERTAS (CF K4 W PRS) -->
-                    <tr><td colspan="5" style="height: 7mm;">&nbsp;</td></tr>
-                    <tr><td colspan="5" style="height: 7mm;">&nbsp;</td></tr>
-                    <tr><td colspan="5" style="height: 7mm;">&nbsp;</td></tr>
+                    <tr><td colspan="5" style="height: 6.5mm;">&nbsp;</td></tr>
+                    <tr><td colspan="5" style="height: 6.5mm;">&nbsp;</td></tr>
+                    <tr><td colspan="5" style="height: 6.5mm;">&nbsp;</td></tr>
                     <!-- BARIS FOOTER: TOTAL & KETERANGAN (TRANSFER / POTONG NOTA) -->
                     <tr>
-                        <td style="height: 8mm;">&nbsp;</td>
+                        <td style="height: 7.5mm;">&nbsp;</td>
                         <td style="text-align: right; font-weight: bold; font-size: 13px; padding-right: 24px; vertical-align: middle;">
                             Total
                         </td>
-                        <td style="height: 8mm; vertical-align: middle; font-size: 13px; font-weight: bold; padding: 2px 8px;">
+                        <td style="height: 7.5mm; vertical-align: middle; font-size: 13px; font-weight: bold; padding: 2px 8px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <span>Rp</span>
                                 <span><?= $ttbp['total_nominal_fmt']; ?></span>
@@ -323,7 +323,7 @@ $total_rows = max($min_rows, count($items));
                     </tr>
                 <?php else: ?>
                     <!-- FORMAT BARANG FISIK BIASA (TANPA GARIS PEMISAH DI DALAM) -->
-                    <?php $row_mm = round(43 / max(6, $total_rows), 2); ?>
+                    <?php $row_mm = round(41 / max(6, $total_rows), 2); ?>
                     <?php for ($i = 0; $i < $total_rows; $i++): ?>
                         <?php $item = isset($items[$i]) ? $items[$i] : null; ?>
                         <tr class="ttbp-item-row">
@@ -380,17 +380,17 @@ $total_rows = max($min_rows, count($items));
             </tr>
             <tr>
                 <!-- Area Tanda Tangan & Nama (Tanpa garis pemisah di atas nama penandatangan) -->
-                <td style="height: 28mm; vertical-align: bottom; text-align: center; padding: 0 4px 6px 4px; font-size: 13px;">
+                <td style="height: 24mm; vertical-align: bottom; text-align: center; padding: 0 4px 6px 4px; font-size: 13px;">
                     <div style="font-size: 13px; line-height: 1.2;">
                         <?= !empty($ttbp['disetujui_oleh']) ? htmlspecialchars($ttbp['disetujui_oleh']) : '&nbsp;'; ?>
                     </div>
                 </td>
-                <td style="height: 28mm; vertical-align: bottom; text-align: center; padding: 0 4px 6px 4px; font-weight: 600; font-size: 13px;">
+                <td style="height: 24mm; vertical-align: bottom; text-align: center; padding: 0 4px 6px 4px; font-weight: 600; font-size: 13px;">
                     <div style="font-size: 13px; font-weight: 600; line-height: 1.2;">
                         <?= !empty($ttbp['dibuat_oleh']) ? htmlspecialchars($ttbp['dibuat_oleh']) : 'Nonik Dia'; ?>
                     </div>
                 </td>
-                <td style="height: 28mm; vertical-align: bottom; text-align: center; padding: 0 4px 6px 4px; font-weight: 600; font-size: 13px;">
+                <td style="height: 24mm; vertical-align: bottom; text-align: center; padding: 0 4px 6px 4px; font-weight: 600; font-size: 13px;">
                     <div style="font-size: 13px; font-weight: 600; line-height: 1.2;">
                         <?= !empty($ttbp['penerima']) ? htmlspecialchars($ttbp['penerima']) : '&nbsp;'; ?>
                     </div>

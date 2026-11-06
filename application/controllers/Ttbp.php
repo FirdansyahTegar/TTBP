@@ -399,6 +399,19 @@ class Ttbp extends CI_Controller {
     }
 
     /**
+     * AJAX endpoint: Pencarian TTBP untuk mengisi Slot Bawah (tanpa batas 150)
+     */
+    public function search_ttbp_slot_ajax() {
+        $q = $this->input->get('q', TRUE);
+        $exclude = $this->input->get('exclude', TRUE);
+        $results = $this->Ttbp_model->search_selectable_ttbp($q, $exclude, 60);
+        $this->output->set_content_type('application/json')->set_output(json_encode([
+            'status' => true,
+            'items'  => $results
+        ]));
+    }
+
+    /**
      * AJAX endpoint: Pratinjau Lembar TTBP Fisik (Modal Preview)
      */
     public function preview_partial_ajax($id_or_nomor) {

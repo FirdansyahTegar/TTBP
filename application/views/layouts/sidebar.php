@@ -115,7 +115,7 @@ document.addEventListener('keydown', function(e) {
         <li class="sidebar-heading px-3 pt-2 pb-1 text-uppercase text-muted fw-bold" style="font-size: 0.68rem; letter-spacing: 0.08em;">
             Menu Utama
         </li>
-        <li class="<?= (($current_uri_1 == 'ttbp' && empty($current_uri_2)) || $current_uri_1 == 'dashboard' || empty($current_uri_1) || $current_uri_1 == 'bonus_promosi') ? 'active' : ''; ?>">
+        <li class="<?= (($current_uri_1 == 'ttbp' && empty($current_uri_2)) || $current_uri_1 == 'dashboard' || empty($current_uri_1)) ? 'active' : ''; ?>">
             <a href="<?= site_url('ttbp'); ?>" onclick="if(window.innerWidth < 992) closeSidebarMobile()">
                 <i class="bi bi-file-earmark-spreadsheet text-primary"></i> 
                 <span>Bonus Promosi (TTBP)</span>
@@ -132,7 +132,7 @@ document.addEventListener('keydown', function(e) {
         <li class="sidebar-heading px-3 pt-3 pb-1 text-uppercase text-muted fw-bold" style="font-size: 0.68rem; letter-spacing: 0.08em;">
             Sistem
         </li>
-        <li class="<?= ($current_uri_1 == 'auth' && $current_uri_2 == 'register') || ($current_uri_1 == 'kti_auth' && $current_uri_2 == 'register') ? 'active' : ''; ?>">
+        <li class="<?= ($current_uri_1 == 'auth' && $current_uri_2 == 'register') ? 'active' : ''; ?>">
             <a href="<?= site_url('auth/register'); ?>" onclick="if(window.innerWidth < 992) closeSidebarMobile()">
                 <i class="bi bi-people-fill text-secondary"></i> 
                 <span>Kelola Pengguna</span>

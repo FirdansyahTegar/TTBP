@@ -120,12 +120,18 @@ if ($is_local) {
 		'save_queries' => TRUE
 	);
 } else {
+	// =========================================================================
+	// KONFIGURASI PRODUCTION (SUBDOMAIN KARISMAERP.COM)
+	// 1. $db['default']        : Database utama aplikasi TTBP ini
+	// 2. $db['sales_tracking'] : Database Sales Tracking (u676129830_salestracking)
+	//    untuk mengambil master toko (st_master_toko), program, dan barang.
+	// =========================================================================
 	$db['default'] = array(
 		'dsn'	=> '',
-		'hostname' => 'localhost',
-		'username' => 'u676129830_kiutimelineit',
-		'password' => 'Kiutimeline89',
-		'database' => 'u676129830_kiutimelineit',
+		'hostname' => getenv('DB_HOST') ?: 'localhost',
+		'username' => getenv('DB_USERNAME') ?: 'u676129830_kiutimelineit',
+		'password' => getenv('DB_PASSWORD') ?: 'Kiutimeline89',
+		'database' => getenv('DB_DATABASE') ?: 'u676129830_kiutimelineit',
 		'dbdriver' => 'mysqli',
 		'dbprefix' => '',
 		'pconnect' => FALSE,
@@ -144,10 +150,10 @@ if ($is_local) {
 
 	$db['sales_tracking'] = array(
 		'dsn'	=> '',
-		'hostname' => 'localhost',
-		'username' => 'u676129830_kiutimelineit',
-		'password' => 'Kiutimeline89',
-		'database' => 'sales_tracking',
+		'hostname' => getenv('DB_SALES_HOST') ?: 'localhost',
+		'username' => getenv('DB_SALES_USERNAME') ?: 'u676129830_salestracking',
+		'password' => getenv('DB_SALES_PASSWORD') ?: 'Kiutimeline89',
+		'database' => getenv('DB_SALES_DATABASE') ?: 'u676129830_salestracking',
 		'dbdriver' => 'mysqli',
 		'dbprefix' => '',
 		'pconnect' => FALSE,

@@ -99,7 +99,7 @@ class Auth extends CI_Controller {
 
             $this->load->view('layouts/header', $data);
             $this->load->view('layouts/sidebar');
-            $this->load->view('kti_auth/register', $data);
+            $this->load->view('auth/register', $data);
             $this->load->view('layouts/footer');
         } else {
             $this->_process_register();
@@ -136,7 +136,7 @@ class Auth extends CI_Controller {
         // Jika bukan admin dan user_id berbeda dengan user yang login, tolak
         if (!is_admin() && $user_id != $this->session->userdata('user_id')) {
             $this->session->set_flashdata('error', 'Anda tidak memiliki hak untuk mengubah kata sandi pengguna lain.');
-            redirect('placeholder/profile');
+            redirect('ttbp');
         }
 
         if (empty($user_id) || empty($new_password)) {
@@ -168,7 +168,7 @@ class Auth extends CI_Controller {
         if (is_admin()) {
             redirect('auth/register');
         } else {
-            redirect('placeholder/profile');
+            redirect('ttbp');
         }
     }
 }

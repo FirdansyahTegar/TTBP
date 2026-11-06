@@ -63,13 +63,3 @@ $route['dashboard'] = 'dashboard';
 $route['dashboard/(:any)'] = 'dashboard/$1';
 $route['ttbp'] = 'ttbp';
 $route['ttbp/(:any)'] = 'ttbp/$1';
-$route['bonus_promosi'] = 'bonus_promosi';
-$route['bonus_promosi/(:any)'] = 'bonus_promosi/$1';
-$route['placeholder'] = 'placeholder';
-$route['placeholder/(:any)'] = 'placeholder/$1';
-
-// Compatibility aliases
-$route['kti_auth'] = 'auth';
-$route['kti_auth/(:any)'] = 'auth/$1';
-$route['kti_dashboard'] = 'dashboard';
-$route['kti_dashboard/(:any)'] = 'dashboard/$1';
