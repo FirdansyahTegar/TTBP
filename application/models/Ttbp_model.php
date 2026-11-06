@@ -37,14 +37,10 @@ class Ttbp_model extends CI_Model {
     }
 
     /**
-     * Nama database sales_tracking (otomatis menyesuaikan Local vs Production karismaerp.com)
+     * Nama database sales_tracking di server lokal
      */
     public function get_sales_db_name() {
-        $host_only = isset($_SERVER['HTTP_HOST']) ? explode(':', $_SERVER['HTTP_HOST'])[0] : '';
-        $is_local = in_array($host_only, ['localhost', '127.0.0.1', '10.10.10.12', '10.10.10.82'])
-                 || (preg_match('/^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/', $host_only) === 1)
-                 || (php_sapi_name() === 'cli');
-        return $is_local ? 'sales_tracking' : (getenv('DB_SALES_DATABASE') ?: 'u676129830_salestracking');
+        return 'sales_tracking';
     }
 
     /**
