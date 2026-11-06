@@ -74,12 +74,65 @@ $active_group = 'default';
 $query_builder = TRUE;
 
 // Konfigurasi Database Server Lokal Perusahaan (10.10.10.12 / localhost)
+$db_host = 'localhost';
+$db_user = 'root';
+$db_pass = '';
+$db_name = 'db_ttbp';
+$sales_db_name = 'sales_tracking';
+
+// Auto-Bootstrap Database: pastikan db_ttbp dan seluruh tabelnya selalu tersedia secara otomatis
+if (function_exists('mysqli_connect')) {
+	$boot_conn = @mysqli_connect($db_host, $db_user, $db_pass);
+	if ($boot_conn) {
+		@mysqli_set_charset($boot_conn, 'utf8');
+		$db_selected = @mysqli_select_db($boot_conn, $db_name);
+		$need_import = false;
+
+		if (!$db_selected) {
+			@mysqli_query($boot_conn, "CREATE DATABASE IF NOT EXISTS `{$db_name}` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci");
+			$db_selected = @mysqli_select_db($boot_conn, $db_name);
+			$need_import = true;
+		} else {
+			$chk1 = @mysqli_query($boot_conn, "SHOW TABLES LIKE 'laporan_bonus_promosi'");
+			$chk2 = @mysqli_query($boot_conn, "SHOW TABLES LIKE 'st_master_toko'");
+			if (!$chk1 || mysqli_num_rows($chk1) === 0 || !$chk2 || mysqli_num_rows($chk2) === 0) {
+				$need_import = true;
+			}
+		}
+
+		if ($need_import && $db_selected && defined('FCPATH') && file_exists(FCPATH . 'database/ttbp.sql')) {
+			$fp = @fopen(FCPATH . 'database/ttbp.sql', 'r');
+			if ($fp) {
+				$sql_stmt = '';
+				while (($line = fgets($fp)) !== false) {
+					$trimmed = trim($line);
+					if ($trimmed === '' || strpos($trimmed, '--') === 0) {
+						continue;
+					}
+					$sql_stmt .= $line;
+					if (substr($trimmed, -1) === ';') {
+						@mysqli_query($boot_conn, $sql_stmt);
+						$sql_stmt = '';
+					}
+				}
+				fclose($fp);
+			}
+		}
+
+		// Cek apakah database sales_tracking tersedia di server ini; jika tidak, fallback ke db_ttbp (yang sudah memiliki st_master_toko)
+		if (!@mysqli_select_db($boot_conn, $sales_db_name)) {
+			$sales_db_name = $db_name;
+		}
+		@mysqli_close($boot_conn);
+	}
+}
+
 $db['default'] = array(
 	'dsn'	=> '',
-	'hostname' => 'localhost',
-	'username' => 'root',
-	'password' => '',
-	'database' => 'db_ttbp',
+	'hostname' => $db_host,
+	'username' => $db_user,
+	'password' => $db_pass,
+	'database' => $db_name,
 	'dbdriver' => 'mysqli',
 	'dbprefix' => '',
 	'pconnect' => FALSE,
@@ -98,10 +151,10 @@ $db['default'] = array(
 
 $db['sales_tracking'] = array(
 	'dsn'	=> '',
-	'hostname' => 'localhost',
-	'username' => 'root',
-	'password' => '',
-	'database' => 'sales_tracking',
+	'hostname' => $db_host,
+	'username' => $db_user,
+	'password' => $db_pass,
+	'database' => $sales_db_name,
 	'dbdriver' => 'mysqli',
 	'dbprefix' => '',
 	'pconnect' => FALSE,

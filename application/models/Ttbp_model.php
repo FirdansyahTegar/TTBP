@@ -48,7 +48,7 @@ class Ttbp_model extends CI_Model {
      */
     public function search_toko($keyword, $limit = 25) {
         $db = $this->get_sales_db();
-        if ($db) {
+        if ($db && $db->table_exists('st_master_toko')) {
             $db->select('kode_toko, nama_toko, alamat, kota, sc, kontak_person, telepon');
             $db->from('st_master_toko');
             if (!empty($keyword)) {
@@ -63,20 +63,23 @@ class Ttbp_model extends CI_Model {
             return $q ? $q->result_array() : array();
         }
 
-        // Fallback jika sales_db tidak terkoneksi secara terpisah, query lintas DB pada server MySQL yang sama
-        $sales_db_name = $this->get_sales_db_name();
-        $this->db->select('kode_toko, nama_toko, alamat, kota, sc, kontak_person, telepon');
-        $this->db->from($sales_db_name . '.st_master_toko');
-        if (!empty($keyword)) {
-            $this->db->group_start();
-            $this->db->like('kode_toko', $keyword);
-            $this->db->or_like('nama_toko', $keyword);
-            $this->db->or_like('sc', $keyword);
-            $this->db->group_end();
+        // Fallback ke st_master_toko di dalam db_ttbp
+        if ($this->db->table_exists('st_master_toko')) {
+            $this->db->select('kode_toko, nama_toko, alamat, kota, sc, kontak_person, telepon');
+            $this->db->from('st_master_toko');
+            if (!empty($keyword)) {
+                $this->db->group_start();
+                $this->db->like('kode_toko', $keyword);
+                $this->db->or_like('nama_toko', $keyword);
+                $this->db->or_like('sc', $keyword);
+                $this->db->group_end();
+            }
+            $this->db->limit($limit);
+            $query = $this->db->get();
+            return $query ? $query->result_array() : array();
         }
-        $this->db->limit($limit);
-        $query = $this->db->get();
-        return $query ? $query->result_array() : array();
+
+        return array();
     }
 
     /**
@@ -84,13 +87,15 @@ class Ttbp_model extends CI_Model {
      */
     public function get_toko_by_kode($kode) {
         $db = $this->get_sales_db();
-        if ($db) {
+        if ($db && $db->table_exists('st_master_toko')) {
             $q = $db->where('kode_toko', $kode)->get('st_master_toko');
-            if ($q) return $q->row_array();
+            if ($q && $q->num_rows() > 0) return $q->row_array();
         }
-        $sales_db_name = $this->get_sales_db_name();
-        $q2 = $this->db->where('kode_toko', $kode)->get($sales_db_name . '.st_master_toko');
-        return $q2 ? $q2->row_array() : null;
+        if ($this->db->table_exists('st_master_toko')) {
+            $q2 = $this->db->where('kode_toko', $kode)->get('st_master_toko');
+            return $q2 ? $q2->row_array() : null;
+        }
+        return null;
     }
 
     /**
@@ -102,21 +107,23 @@ class Ttbp_model extends CI_Model {
             $db = $this->db;
         }
 
-        // Jika kode_toko diberikan, prioritaskan program yang diikuti toko tsb
-        if (!empty($kode_toko)) {
-            try {
-                $table_kios_prog = ($db === $this->sales_db) ? 'st_kios_programs' : 'sales_tracking.st_kios_programs';
-                $table_prog = ($db === $this->sales_db) ? 'st_programs' : 'sales_tracking.st_programs';
+        if (!$db->table_exists('st_programs')) {
+            return array();
+        }
 
+        // Jika kode_toko diberikan, prioritaskan program yang diikuti toko tsb
+        if (!empty($kode_toko) && $db->table_exists('st_kios_programs')) {
+            try {
                 $db->select("p.id_program, p.nama, p.start_date, p.end_date, p.target_qty, p.satuan, kp.target_qty as custom_target, kp.custom_end_date");
-                $db->from("{$table_kios_prog} kp");
-                $db->join("{$table_prog} p", "p.id_program = kp.id_program", "inner");
+                $db->from("st_kios_programs kp");
+                $db->join("st_programs p", "p.id_program = kp.id_program", "inner");
                 $db->where("kp.kode_toko", $kode_toko);
                 if (!empty($keyword)) {
                     $db->like('p.nama', $keyword);
                 }
                 $db->limit($limit);
-                $res = $db->get()->result_array();
+                $q_kp = $db->get();
+                $res = $q_kp ? $q_kp->result_array() : array();
                 if (!empty($res)) {
                     return $res;
                 }
@@ -126,15 +133,15 @@ class Ttbp_model extends CI_Model {
         }
 
         // Query umum st_programs
-        $table_prog = ($db === $this->sales_db) ? 'st_programs' : 'sales_tracking.st_programs';
         $db->select("id_program, nama, start_date, end_date, target_qty, satuan");
-        $db->from($table_prog);
+        $db->from('st_programs');
         if (!empty($keyword)) {
             $db->like('nama', $keyword);
         }
         $db->order_by('id_program', 'DESC');
         $db->limit($limit);
-        return $db->get()->result_array();
+        $q_prog = $db->get();
+        return $q_prog ? $q_prog->result_array() : array();
     }
 
     /**
@@ -146,9 +153,12 @@ class Ttbp_model extends CI_Model {
             $db = $this->db;
         }
 
-        $table_barang = ($db === $this->sales_db) ? 'st_master_barang' : 'sales_tracking.st_master_barang';
+        if (!$db->table_exists('st_master_barang')) {
+            return array();
+        }
+
         $db->select('kode_barang, nama_barang, harga');
-        $db->from($table_barang);
+        $db->from('st_master_barang');
         if (!empty($keyword)) {
             $db->group_start();
             $db->like('kode_barang', $keyword);
@@ -623,9 +633,12 @@ class Ttbp_model extends CI_Model {
         $db = $this->get_sales_db();
         if (!$db) $db = $this->db;
 
-        $table = ($db === $this->sales_db) ? 'st_programs' : 'sales_tracking.st_programs';
+        if (!$db->table_exists('st_programs')) {
+            return [];
+        }
+
         $db->select('id_program, nama, target_qty, satuan, start_date, end_date');
-        $db->from($table);
+        $db->from('st_programs');
         if (!empty($keyword)) {
             $db->like('nama', $keyword);
         }
@@ -1306,7 +1319,7 @@ class Ttbp_model extends CI_Model {
     }
 
     /**
-     * Ambil map data toko dari sales_tracking (mendukung u676129830_salestracking di production)
+     * Ambil map data toko dari st_master_toko (sales_tracking atau db_ttbp)
      */
     public function get_toko_map($kodes = []) {
         if (empty($kodes)) return [];
@@ -1315,10 +1328,10 @@ class Ttbp_model extends CI_Model {
 
         $result = [];
         $db = $this->get_sales_db();
-        if ($db) {
+        if ($db && $db->table_exists('st_master_toko')) {
             $db->where_in('kode_toko', $unique_kodes);
             $query = $db->get('st_master_toko');
-            if ($query) {
+            if ($query && $query->num_rows() > 0) {
                 foreach ($query->result_array() as $row) {
                     $result[$row['kode_toko']] = $row;
                 }
@@ -1326,18 +1339,15 @@ class Ttbp_model extends CI_Model {
             }
         }
 
-        // Fallback lintas database di server MySQL yang sama (jika user DB memiliki akses ke u676129830_salestracking)
-        try {
-            $sales_db_name = $this->get_sales_db_name();
+        // Fallback ke st_master_toko di dalam db_ttbp
+        if ($this->db->table_exists('st_master_toko')) {
             $this->db->where_in('kode_toko', $unique_kodes);
-            $query2 = $this->db->get($sales_db_name . '.st_master_toko');
+            $query2 = $this->db->get('st_master_toko');
             if ($query2) {
                 foreach ($query2->result_array() as $row) {
                     $result[$row['kode_toko']] = $row;
                 }
             }
-        } catch (Exception $e) {
-            // Abaikan jika tidak ada akses lintas DB
         }
         return $result;
     }
