@@ -766,15 +766,29 @@ $(document).ready(function() {
         var origHtml = $btn.html();
         $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Mencetak...');
         $.post('<?= site_url("ttbp/print_direct_lx310_ajax"); ?>', { nomors: [nomor] }, function(res) {
-            $btn.prop('disabled', false).html(origHtml);
             if (res && res.status) {
+                $btn.prop('disabled', false).html(origHtml);
                 alert('Berhasil dikirim ke printer ' + (res.printer || 'Epson LX-310') + '!');
+            } else if (res && res.fallback_print && res.sheets) {
+                // Jika diakses dari Cloud (karismaerp.com), coba kirim ke bridge lokal PC atau buka halaman cetak
+                $.post('http://localhost/TTBP/lx310_bridge.php?action=print', { sheets_json: JSON.stringify(res.sheets) }, function(bRes) {
+                    $btn.prop('disabled', false).html(origHtml);
+                    if (bRes && bRes.status) {
+                        alert('Berhasil dikirim ke printer ' + (bRes.printer || 'Epson LX-310') + '!');
+                    } else {
+                        window.open('<?= site_url("ttbp/cetak/"); ?>' + encodeURIComponent(nomor) + '?autoprint=1', '_blank');
+                    }
+                }, 'json').fail(function() {
+                    $btn.prop('disabled', false).html(origHtml);
+                    window.open('<?= site_url("ttbp/cetak/"); ?>' + encodeURIComponent(nomor) + '?autoprint=1', '_blank');
+                });
             } else {
+                $btn.prop('disabled', false).html(origHtml);
                 alert('Gagal mencetak: ' + (res && res.message ? res.message : 'Unknown error'));
             }
         }, 'json').fail(function() {
             $btn.prop('disabled', false).html(origHtml);
-            alert('Gagal menghubungi server untuk mencetak.');
+            window.open('<?= site_url("ttbp/cetak/"); ?>' + encodeURIComponent(nomor) + '?autoprint=1', '_blank');
         });
     });
 

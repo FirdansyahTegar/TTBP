@@ -6,6 +6,7 @@ $next_nomor  = isset($next_nomor) ? $next_nomor : null;
 $ttbp_options = !empty($ttbp_options) ? $ttbp_options : [];
 $printers = !empty($printers) ? $printers : [];
 $default_lx310 = !empty($default_lx310) ? $default_lx310 : '';
+$lx310_direct_supported = !empty($lx310_direct_supported);
 
 $active_nomors = [];
 foreach ($sheets as $s) {
@@ -296,7 +297,7 @@ if ($ttbp2_param === 'copy') {
 
         <div class="d-flex align-items-center flex-wrap gap-2">
             <!-- Pilihan Printer -->
-            <div class="input-group input-group-sm" style="width: auto;">
+            <div id="printer-selector-group" class="input-group input-group-sm <?= !$lx310_direct_supported ? 'd-none' : ''; ?>" style="width: auto;">
                 <span class="input-group-text bg-light text-secondary" style="font-size: 0.75rem;">
                     <i class="bi bi-hdd-network"></i>
                 </span>
@@ -314,11 +315,11 @@ if ($ttbp2_param === 'copy') {
             </div>
 
             <button type="button" id="btn-direct-lx310" class="btn btn-sm btn-primary px-3 fw-semibold shadow-sm" onclick="printDirectLx310()">
-                <i class="bi bi-printer-fill me-1"></i> Langsung Cetak
+                <i class="bi bi-printer-fill me-1"></i> Cetak
             </button>
 
-            <button type="button" class="btn btn-sm btn-outline-dark px-2 shadow-sm" onclick="window.print()">
-                <i class="bi bi-window me-1"></i> Print Manual
+            <button type="button" id="btn-browser-print" class="btn btn-sm btn-outline-dark px-2 shadow-sm <?= !$lx310_direct_supported ? 'd-none' : ''; ?>" onclick="window.print()">
+                <i class="bi bi-window me-1"></i> Dialog Browser
             </button>
 
             <a href="<?= site_url('ttbp/export_excel/' . urlencode($ttbp['nomor_ttbp'])); ?>" class="btn btn-sm btn-outline-success px-2 shadow-sm" title="Unduh Excel">
@@ -385,9 +386,44 @@ if ($ttbp2_param === 'copy') {
         try { localStorage.removeItem('ttbp_printer_calibration_k4'); } catch(e) {}
 
         var activeNomors = <?= json_encode($active_nomors); ?>;
+        var activeSheetsData = <?= json_encode(array_values($sheets)); ?>;
+        var serverLx310Supported = <?= json_encode($lx310_direct_supported); ?>;
+        var localBridgeUrl = null;
         var currentPrimaryNomor = <?= json_encode($ttbp['nomor_ttbp']); ?>;
         var currentSelectedSlot2 = <?= json_encode($ttbp2_param); ?>;
         var searchTimer = null;
+
+        // Jika diakses dari Cloud (karismaerp.com), cek apakah bridge XAMPP lokal aktif di PC user
+        if (!serverLx310Supported) {
+            fetch('http://localhost/TTBP/lx310_bridge.php?action=printers')
+                .then(function(r) { return r.json(); })
+                .then(function(res) {
+                    if (res && res.status && res.supported) {
+                        localBridgeUrl = 'http://localhost/TTBP/lx310_bridge.php?action=print';
+                        var sel = document.getElementById('select-lx310-printer');
+                        if (sel && res.printers && res.printers.length > 0) {
+                            var opts = '';
+                            for (var i = 0; i < res.printers.length; i++) {
+                                var p = res.printers[i];
+                                var isSel = (p === res.default_lx310) ? 'selected' : '';
+                                opts += '<option value="' + escapeHtml(p) + '" ' + isSel + '>' + escapeHtml(p) + '</option>';
+                            }
+                            sel.innerHTML = opts;
+                        }
+                        document.getElementById('printer-selector-group').classList.remove('d-none');
+                        document.getElementById('btn-browser-print').classList.remove('d-none');
+                    }
+                })
+                .catch(function() {
+                    // Bridge lokal tidak aktif -> gunakan dialog print browser saat klik Cetak
+                });
+        }
+
+        <?php if (!empty($_GET['autoprint'])): ?>
+        window.addEventListener('load', function() {
+            setTimeout(function() { window.print(); }, 350);
+        });
+        <?php endif; ?>
 
         function changeSlotBawah(val) {
             var url = new URL(window.location.href);
@@ -474,6 +510,12 @@ if ($ttbp2_param === 'copy') {
         }
 
         function printDirectLx310() {
+            // Jika di Cloud dan bridge lokal tidak aktif, langsung buka dialog print browser
+            if (!serverLx310Supported && !localBridgeUrl) {
+                window.print();
+                return;
+            }
+
             var btn = document.getElementById('btn-direct-lx310');
             var printer = document.getElementById('select-lx310-printer').value;
             var origHtml = btn.innerHTML;
@@ -482,13 +524,18 @@ if ($ttbp2_param === 'copy') {
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mencetak...';
             showToast('<i class="bi bi-printer me-1"></i> Mengirim dokumen ke printer <strong>' + (printer || 'Epson LX-310') + '</strong>...', 'text-bg-primary');
 
+            var targetUrl = serverLx310Supported ? '<?= site_url("ttbp/print_direct_lx310_ajax"); ?>' : localBridgeUrl;
             var formData = new URLSearchParams();
-            for (var i = 0; i < activeNomors.length; i++) {
-                formData.append('nomors[]', activeNomors[i]);
+            if (serverLx310Supported) {
+                for (var i = 0; i < activeNomors.length; i++) {
+                    formData.append('nomors[]', activeNomors[i]);
+                }
+            } else {
+                formData.append('sheets_json', JSON.stringify(activeSheetsData));
             }
             formData.append('printer', printer);
 
-            fetch('<?= site_url("ttbp/print_direct_lx310_ajax"); ?>', {
+            fetch(targetUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: formData.toString()
@@ -499,6 +546,8 @@ if ($ttbp2_param === 'copy') {
                 btn.innerHTML = origHtml;
                 if (res && res.status) {
                     showToast('<i class="bi bi-check-circle-fill me-1"></i> ' + res.message, 'text-bg-success');
+                } else if (res && res.fallback_print) {
+                    window.print();
                 } else {
                     showToast('<i class="bi bi-exclamation-triangle-fill me-1"></i> ' + (res.message || 'Gagal mencetak.'), 'text-bg-danger');
                 }
@@ -506,7 +555,7 @@ if ($ttbp2_param === 'copy') {
             .catch(function() {
                 btn.disabled = false;
                 btn.innerHTML = origHtml;
-                showToast('<i class="bi bi-exclamation-triangle-fill me-1"></i> Gagal menghubungi server cetak.', 'text-bg-danger');
+                window.print();
             });
         }
     </script>

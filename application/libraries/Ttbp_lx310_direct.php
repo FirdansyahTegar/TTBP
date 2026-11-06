@@ -22,9 +22,21 @@ class Ttbp_lx310_direct {
     }
 
     /**
+     * Cek apakah server saat ini berjalan di Windows lokal dengan dukungan shell_exec (PowerShell GDI+).
+     * Pada shared hosting Linux (karismaerp.com), fungsi ini otomatis mengembalikan false agar aman.
+     */
+    public function is_supported() {
+        return (DIRECTORY_SEPARATOR === '\\') && function_exists('shell_exec');
+    }
+
+    /**
      * Dapatkan daftar printer yang terpasang di Windows Server/Host
      */
     public function get_installed_printers() {
+        if (!$this->is_supported()) {
+            return [];
+        }
+
         $ps_script = <<<'PS'
 Add-Type -AssemblyName System.Drawing
 $list = @()
@@ -45,6 +57,10 @@ PS;
      * Cari nama printer Epson LX-310 default yang terpasang
      */
     public function find_lx310_printer() {
+        if (!$this->is_supported()) {
+            return '';
+        }
+
         $printers = $this->get_installed_printers();
         foreach ($printers as $p) {
             if (stripos($p, 'LX-310') !== false || stripos($p, 'LX 310') !== false || stripos($p, 'LX310') !== false) {
@@ -68,6 +84,14 @@ PS;
      * @return array ['status' => bool, 'message' => string, 'printer' => string]
      */
     public function print_sheets($sheets, $printer_name = '', $preview_png = '') {
+        if (!$this->is_supported()) {
+            return [
+                'status'        => false,
+                'fallback_print'=> true,
+                'message'       => 'Server cloud tidak terhubung langsung ke printer lokal. Menggunakan dialog cetak browser.'
+            ];
+        }
+
         if (empty($sheets)) {
             return ['status' => false, 'message' => 'Data TTBP kosong.'];
         }
@@ -97,7 +121,7 @@ PS;
         $cmd = 'powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File '
              . escapeshellarg($ps1_file) . ' -JsonPath ' . escapeshellarg($json_file) . ' 2>&1';
 
-        $out = shell_exec($cmd);
+        $out = function_exists('shell_exec') ? shell_exec($cmd) : '';
 
         @unlink($json_file);
         @unlink($ps1_file);
@@ -118,6 +142,9 @@ PS;
      * Jalankan perintah PowerShell singkat
      */
     protected function run_powershell($script) {
+        if (!$this->is_supported()) {
+            return '';
+        }
         $temp_ps1 = tempnam(sys_get_temp_dir(), 'ttbp_cmd_') . '.ps1';
         file_put_contents($temp_ps1, $script);
         $cmd = 'powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File ' . escapeshellarg($temp_ps1) . ' 2>&1';

@@ -344,17 +344,19 @@ class Ttbp extends CI_Controller {
         }
 
         $this->load->library('ttbp_lx310_direct');
-        $printers = $this->ttbp_lx310_direct->get_installed_printers();
-        $default_lx310 = $this->ttbp_lx310_direct->find_lx310_printer();
+        $lx310_supported = $this->ttbp_lx310_direct->is_supported();
+        $printers = $lx310_supported ? $this->ttbp_lx310_direct->get_installed_printers() : [];
+        $default_lx310 = $lx310_supported ? $this->ttbp_lx310_direct->find_lx310_printer() : '';
 
         $this->load->view('ttbp/print', [
-            'ttbp'          => $primary_ttbp,
-            'sheets'        => $sheets,
-            'ttbp2_param'   => $ttbp2_param ?: 'none',
-            'next_nomor'    => $adjacent['next_nomor'],
-            'ttbp_options'  => $adjacent['options'],
-            'printers'      => $printers,
-            'default_lx310' => $default_lx310
+            'ttbp'                   => $primary_ttbp,
+            'sheets'                 => $sheets,
+            'ttbp2_param'            => $ttbp2_param ?: 'none',
+            'next_nomor'             => $adjacent['next_nomor'],
+            'ttbp_options'           => $adjacent['options'],
+            'printers'               => $printers,
+            'default_lx310'          => $default_lx310,
+            'lx310_direct_supported' => $lx310_supported
         ]);
     }
 
@@ -394,6 +396,9 @@ class Ttbp extends CI_Controller {
 
         $this->load->library('ttbp_lx310_direct');
         $result = $this->ttbp_lx310_direct->print_sheets($sheets, $printer);
+        if (!empty($result['fallback_print'])) {
+            $result['sheets'] = $sheets;
+        }
 
         $this->output->set_content_type('application/json')->set_output(json_encode($result));
     }
